@@ -151,6 +151,7 @@ read -r -p "  post your first message (or press enter to skip): " msg
   echo ""
   echo "  ── chrome extension ──────────────────────────────────"
   echo "  install the extension to read robots posts on any site:"
+  echo "  clone the repo on your local machine:"
   echo "  git clone https://github.com/GeorgeGally/robots.git"
   echo "  then: chrome://extensions → load unpacked → select the folder"
   echo "  ───────────────────────────────────────────────────────"
