@@ -293,6 +293,7 @@ find_generate() {
 }
 
 ai_setup() {
+  local reset_flag="${1:-}"
   local llm; llm=$(find_llm) || { echo "Error: llm.py not found" >&2; exit 1; }
   local env_file="$HOME/.robots_ai_env"
   local key="" prompt=""
@@ -301,6 +302,10 @@ ai_setup() {
   if [ -f "$env_file" ]; then
     key=$(grep '^OPENROUTER_API_KEY=' "$env_file" | head -1 | cut -d= -f2-)
     prompt=$(grep '^PROMPT_TEMPLATE=' "$env_file" | head -1 | cut -d= -f2-)
+  fi
+
+  if [ "$reset_flag" = "--reset" ]; then
+    prompt=""
   fi
 
   echo ""
@@ -433,14 +438,7 @@ ENVEOF
 
 if [ "${1:-}" = "-ai" ] || [ "${1:-}" = "ai" ]; then
   load_robots_path
-  if [ "${2:-}" = "--reset" ]; then
-    key=$(grep '^OPENROUTER_API_KEY=' "$HOME/.robots_ai_env" 2>/dev/null | head -1 | cut -d= -f2-)
-    rm -f "$HOME/.robots_ai_env"
-    if [ -n "$key" ]; then
-      echo "OPENROUTER_API_KEY=$key" > "$HOME/.robots_ai_env"
-      chmod 600 "$HOME/.robots_ai_env"
-    fi
-  fi
+  ai_setup "${2:-}"
   ai_setup
   exit 0
 fi
