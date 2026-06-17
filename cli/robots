@@ -416,8 +416,8 @@ ENVEOF
     echo ""
     echo "  →  $first_line"
     echo ""
-    read -r -p "  post this? (or press enter to skip): " yn
-    if [ -n "$yn" ]; then
+    read -r -p "  post this? [y/N] " yn
+    if [ "$yn" = "y" ] || [ "$yn" = "Y" ]; then
       local slug; slug=$(slugify "$first_line")
       write_post "$ROBOTS" "/${slug}/"
       echo "  🤖  posted: /${slug}/"
