@@ -406,37 +406,21 @@ ENVEOF
   read -r -p "  run a test generation? [Y/n] " yn
   if [ "$yn" != "n" ] && [ "$yn" != "N" ]; then
     echo "  generating…"
-    generate_py=$(find_generate) || true
-    if [ -n "$generate_py" ]; then
-      export ROBOTS_TXT="$ROBOTS"
-      log_dir=$(dirname "$ROBOTS")
-      for candidate in "$log_dir/logs/https" "$log_dir/access.log" "$HOME/logs"; do
-        if [ -f "$candidate" ] || [ -d "$candidate" ]; then
-          export ROBOTS_LOG="$candidate"
-          break
-        fi
-      done
-      if ! python3 "$generate_py" 2>&1; then
-        echo "  ✗  generation failed. retry: robots -ai" >&2
-        exit 1
-      fi
-    else
-      result=$(python3 "$llm" 2>&1) || {
-        echo "  ✗  generation failed:" >&2
-        echo "  $result" >&2
-        echo "     retry: robots -ai" >&2
-        exit 1
-      }
-      first_line=$(echo "$result" | head -1)
-      echo ""
-      echo "  →  $first_line"
-      echo ""
-      read -r -p "  post this? (or press enter to skip): " yn
-      if [ -n "$yn" ]; then
-        local slug; slug=$(slugify "$first_line")
-        write_post "$ROBOTS" "/${slug}/"
-        echo "  🤖  posted: /${slug}/"
-      fi
+    result=$(python3 "$llm" 2>&1) || {
+      echo "  ✗  generation failed:" >&2
+      echo "  $result" >&2
+      echo "     retry: robots -ai" >&2
+      exit 1
+    }
+    first_line=$(echo "$result" | head -1)
+    echo ""
+    echo "  →  $first_line"
+    echo ""
+    read -r -p "  post this? (or press enter to skip): " yn
+    if [ -n "$yn" ]; then
+      local slug; slug=$(slugify "$first_line")
+      write_post "$ROBOTS" "/${slug}/"
+      echo "  🤖  posted: /${slug}/"
     fi
   fi
   echo ""
