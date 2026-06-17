@@ -439,7 +439,6 @@ ENVEOF
 if [ "${1:-}" = "-ai" ] || [ "${1:-}" = "ai" ]; then
   load_robots_path
   ai_setup "${2:-}"
-  ai_setup
   exit 0
 fi
 
