@@ -26,7 +26,7 @@ def read_config():
 
 
 def call_llm(api_key, prompt):
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             response = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
@@ -39,18 +39,29 @@ def call_llm(api_key, prompt):
                 json={
                     "model": "openrouter/free",
                     "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 100,
+                    "max_tokens": 300,
                 },
                 timeout=30,
             )
             response.raise_for_status()
-            content = response.json()["choices"][0]["message"]["content"]
+            data = response.json()
+            if "choices" not in data or not data["choices"]:
+                if attempt < 2:
+                    continue
+                raise RuntimeError(f"LLM returned no choices: {json.dumps(data)}")
+            content = data["choices"][0]["message"]["content"]
             if content and content.strip():
                 return content.strip()
-        except Exception:
-            if attempt == 1:
+            if attempt < 2:
+                continue
+            raise RuntimeError(f"LLM returned empty content: {json.dumps(data)}")
+        except requests.exceptions.HTTPError:
+            if attempt == 2:
                 raise
-    raise RuntimeError("LLM returned empty content")
+        except requests.exceptions.Timeout:
+            if attempt == 2:
+                raise RuntimeError("LLM request timed out after 3 attempts")
+    raise RuntimeError("LLM returned empty content after 3 attempts")
 
 
 def main():

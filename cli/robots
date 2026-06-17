@@ -406,12 +406,14 @@ ENVEOF
   read -r -p "  run a test generation? [Y/n] " yn
   if [ "$yn" != "n" ] && [ "$yn" != "N" ]; then
     echo "  generating…"
-    result=$(python3 "$llm" 2>&1) || {
+    result=$(python3 "$llm" 2>/tmp/robots-ai-err) || {
       echo "  ✗  generation failed:" >&2
-      echo "  $result" >&2
+      cat /tmp/robots-ai-err >&2
       echo "     retry: robots -ai" >&2
+      rm -f /tmp/robots-ai-err
       exit 1
     }
+    rm -f /tmp/robots-ai-err
     first_line=$(echo "$result" | head -1)
     echo ""
     echo "  →  $first_line"
