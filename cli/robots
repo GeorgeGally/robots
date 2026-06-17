@@ -296,7 +296,7 @@ ai_setup() {
   local llm; llm=$(find_llm) || { echo "Error: llm.py not found" >&2; exit 1; }
   local env_file="$HOME/.robots_ai_env"
   local key="" prompt=""
-  local default_prompt="Write a single path that could appear after Disallow: in a robots.txt file. This is a blog post — the entire post is the path itself. Lowercase, hyphens, no spaces, no file extension. Think: a place, a year, a version of something that didn't make it, a late-night thought, something started and abandoned. One line only. No explanation. Just the path."
+  local default_prompt="Write a single path that could appear after Disallow: in a robots.txt file. You are talking directly to the crawler reading this — be funny, weird, or honest about what you're hiding from robots. Think: things robots shouldn't see, secrets bots would find, jokes about disallowing machines, absurd things a website owner would forbid. Lowercase, hyphens, no spaces, no file extension. One line only. No explanation. Just the path."
 
   if [ -f "$env_file" ]; then
     key=$(grep '^OPENROUTER_API_KEY=' "$env_file" | head -1 | cut -d= -f2-)
