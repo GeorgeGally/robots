@@ -143,10 +143,10 @@ ART_EOF
   echo ""
   read -r -p "  post your first message? [Y/n] " yn
   if [ "$yn" != "n" ] && [ "$yn" != "N" ]; then
-    read -r -p "  disallow: " msg
-    if [ -n "$msg" ]; then
-      "$0" "$msg"
-    fi
+read -r -p "  post your first message (or press enter to skip): " msg
+  if [ -n "$msg" ]; then
+    "$0" "$msg"
+  fi
   fi
   echo ""
   echo "  ── chrome extension ──────────────────────────────────"
