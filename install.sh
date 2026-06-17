@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+if ! command -v python3 &>/dev/null; then
+  echo "Error: python3 is required but not found." >&2
+  echo "Install python3 and try again." >&2
+  exit 1
+fi
+
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "$DIR" > "$HOME/.robots_repo"
 

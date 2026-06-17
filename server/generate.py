@@ -240,7 +240,7 @@ def log_result(crawlers_seen, bar_line, success=True):
     with open(GENERATE_LOG, "a") as f:
         f.write(line)
 
-    if GENERATE_LOG.stat().st_size > 1024 * 1024:
+    if GENERATE_LOG.exists() and GENERATE_LOG.stat().st_size > 1024 * 1024:
         log_path = GENERATE_LOG
         rotated = log_path.with_suffix(".log.1")
         shutil.move(log_path, rotated)

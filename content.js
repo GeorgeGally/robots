@@ -110,7 +110,7 @@
     close.addEventListener('click', (e) => {
       e.stopPropagation()
       SESSION_DISMISSED.add(origin)
-      if (interval) clearInterval(interval)
+      clearTimeout(timer)
       if (bar.spacer) bar.spacer.remove()
       bar.remove()
     })
