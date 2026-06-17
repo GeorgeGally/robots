@@ -319,7 +319,7 @@ ai_setup() {
   else
     echo "  saved: ${key:0:12}…"
     echo ""
-    read -r -p "  replace? [y/N] " yn
+    read -r -p "  replace? [y/n] " yn
     if [ "$yn" = "y" ] || [ "$yn" = "Y" ]; then
       read -r -p "  OpenRouter API key: " key
     fi
@@ -333,7 +333,7 @@ ai_setup() {
     echo "  default:"
     echo "  $default_prompt"
     echo ""
-    read -r -p "  customize? [y/N] " yn
+    read -r -p "  customize? [y/n] " yn
     if [ "$yn" = "y" ] || [ "$yn" = "Y" ]; then
       read -r -p "  prompt: " prompt
       [ -z "$prompt" ] && prompt="$default_prompt"
@@ -403,7 +403,7 @@ ENVEOF
   # --- Test run ---
   echo "  ── test ─────────────────────────────────────"
   echo ""
-  read -r -p "  run a test generation? [Y/n] " yn
+  read -r -p "  run a test generation? [y/n] " yn
   if [ "$yn" != "n" ] && [ "$yn" != "N" ]; then
     echo "  generating…"
     result=$(python3 "$llm" 2>/tmp/robots-ai-err) || {
@@ -418,7 +418,7 @@ ENVEOF
     echo ""
     echo "  →  $first_line"
     echo ""
-    read -r -p "  post this? [y/N] " yn
+    read -r -p "  post this? [y/n] " yn
     if [ "$yn" = "y" ] || [ "$yn" = "Y" ]; then
       local slug; slug=$(slugify "$first_line")
       write_post "$ROBOTS" "/${slug}/"
