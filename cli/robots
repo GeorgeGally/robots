@@ -434,7 +434,12 @@ ENVEOF
 if [ "${1:-}" = "-ai" ] || [ "${1:-}" = "ai" ]; then
   load_robots_path
   if [ "${2:-}" = "--reset" ]; then
+    key=$(grep '^OPENROUTER_API_KEY=' "$HOME/.robots_ai_env" 2>/dev/null | head -1 | cut -d= -f2-)
     rm -f "$HOME/.robots_ai_env"
+    if [ -n "$key" ]; then
+      echo "OPENROUTER_API_KEY=$key" > "$HOME/.robots_ai_env"
+      chmod 600 "$HOME/.robots_ai_env"
+    fi
   fi
   ai_setup
   exit 0
