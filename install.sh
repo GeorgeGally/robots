@@ -107,15 +107,12 @@ if [ ${#FOUND[@]} -gt 0 ]; then
   done
   echo ""
   echo "  we need your robots.txt to post."
-  read -r -p "  choose (1-${#FOUND[@]}, or 0 to enter a path): " choice
+  read -r -p "  choose (1-${#FOUND[@]}, or enter a path): " choice
   if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -gt 0 ] && [ "$choice" -le "${#FOUND[@]}" ]; then
     idx=$((choice-1))
     "$DEST" -setup "${FOUND[$idx]}"
   else
-    echo ""
-    echo "  where is your robots.txt file?"
-    echo ""
-    "$DEST" -setup
+    "$DEST" -setup "${choice:-}"
   fi
 else
   echo ""
