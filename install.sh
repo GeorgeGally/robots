@@ -95,7 +95,13 @@ fi
 if [ -f "../robots.txt" ]; then
   FOUND+=("$(cd .. && pwd)/robots.txt")
 fi
+if [ -f "../../robots.txt" ]; then
+  FOUND+=("$(cd ../.. && pwd)/robots.txt")
+fi
 for d in */; do
+  [ -d "$d" ] && [ -f "${d}robots.txt" ] && FOUND+=("$(cd "$d" && pwd)/robots.txt")
+done
+for d in */*/; do
   [ -d "$d" ] && [ -f "${d}robots.txt" ] && FOUND+=("$(cd "$d" && pwd)/robots.txt")
 done
 
