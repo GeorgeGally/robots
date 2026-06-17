@@ -15,12 +15,14 @@ from prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
 
 BASE_DIR = Path(__file__).parent.resolve()
 
-ENV_PATH = os.environ.get("ROBOTS_ENV", BASE_DIR / ".env")
-LOG_PATH = os.environ.get("ROBOTS_LOG", "/home/radarboy/logs/radarboy.com/https")
-SITE_ROOT = os.environ.get(
-    "ROBOTS_SITE_ROOT",
-    "/home/radarboy/radarboy.com",
-)
+ENV_PATH = os.environ.get("ROBOTS_ENV", str(Path.home() / ".robots_ai_env"))
+LOG_PATH = os.environ.get("ROBOTS_LOG", "")
+_robots_txt = os.environ.get("ROBOTS_TXT", "")
+if _robots_txt:
+    SITE_ROOT = str(Path(_robots_txt).resolve().parent)
+else:
+    _site_root = os.environ.get("ROBOTS_SITE_ROOT", "")
+    SITE_ROOT = _site_root or str(Path.home() / "public_html")
 MEMORY_PATH = BASE_DIR / "memory.md"
 GENERATE_LOG = BASE_DIR / "generate.log"
 TODAY = datetime.now().strftime("%Y-%m-%d")
@@ -31,7 +33,7 @@ def load_env():
     load_dotenv(ENV_PATH)
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
-        raise SystemExit("OPENROUTER_API_KEY not found in .env")
+        raise SystemExit("OPENROUTER_API_KEY not found in config")
     return api_key
 
 
@@ -57,6 +59,8 @@ KNOWN_USER_AGENTS = {
 
 
 def parse_logs():
+    if not LOG_PATH:
+        return ""
     log_file = Path(LOG_PATH)
     if not log_file.exists():
         return ""
@@ -101,7 +105,7 @@ def call_llm(api_key, user_prompt):
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
-                    "HTTP-Referer": "https://radarboy3000.com",
+                    "HTTP-Referer": "https://github.com/GeorgeGally/robots",
                     "X-Title": "Robots",
                 },
                 json={

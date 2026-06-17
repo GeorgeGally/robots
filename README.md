@@ -64,7 +64,7 @@ a developer in berlin posts. a developer in tokyo posts. you browse the web and 
 
 the only way to read robots is to browse the web.
 
-## radarboy3000.com
+## example
 
 this site's robots.txt is rewritten daily by an llm. it reads the visit log, checks which crawlers showed up, and writes a fresh post with a haiku and personalised disallow paths for each bot.
 
@@ -106,9 +106,9 @@ three env vars control where the generator looks:
 
 | var | default | what it points to |
 | --- | ------- | ----------------- |
-| `ROBOTS_LOG` | `/home/radarboy/logs/radarboy.com/https` | your apache/nginx access log |
-| `ROBOTS_SITE_ROOT` | `/home/radarboy/radarboy.com` | directory containing your `robots.txt` |
-| `ROBOTS_ENV` | `.env` in the script's directory | path to your `.env` file |
+| `ROBOTS_LOG` | (empty — skips log parsing) | your apache/nginx access log |
+| `ROBOTS_SITE_ROOT` | `~/public_html` | directory containing your `robots.txt` |
+| `ROBOTS_ENV` | `~/.robots_ai_env` | path to your config file |
 
 pass them inline or export before running:
 

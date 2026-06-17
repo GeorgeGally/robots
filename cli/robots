@@ -258,6 +258,27 @@ find_llm() {
   return 1
 }
 
+find_generate() {
+  local repo_file="$HOME/.robots_repo"
+  if [ -f "$repo_file" ]; then
+    local repo; repo=$(cat "$repo_file")
+    if [ -f "$repo/server/generate.py" ]; then
+      echo "$repo/server/generate.py"
+      return 0
+    fi
+  fi
+  local self
+  self=$(command -v robots 2>/dev/null)
+  if [ -n "$self" ]; then
+    local dir; dir=$(dirname "$self")
+    if [ -f "$dir/server/generate.py" ]; then
+      echo "$dir/server/generate.py"
+      return 0
+    fi
+  fi
+  return 1
+}
+
 ai_setup() {
   local llm; llm=$(find_llm) || { echo "Error: llm.py not found" >&2; exit 1; }
   local env_file="$HOME/.robots_ai_env"
@@ -403,7 +424,21 @@ fi
 
 if [ "${1:-}" = "-generate" ] || [ "${1:-}" = "generate" ]; then
   load_robots_path
-  llm=$(find_llm) || { echo "Error: llm.py not found" >&2; exit 1; }
+  generate_py=$(find_generate) || true
+  if [ -n "$generate_py" ]; then
+    export ROBOTS_TXT="$ROBOTS"
+    log_dir=$(dirname "$ROBOTS")
+    for candidate in "$log_dir/logs/https" "$log_dir/access.log" "$HOME/logs"; do
+      if [ -f "$candidate" ] || [ -d "$candidate" ]; then
+        export ROBOTS_LOG="$candidate"
+        break
+      fi
+    done
+    python3 "$generate_py"
+    exit $?
+  fi
+  # fallback to simple generator
+  llm=$(find_llm) || { echo "Error: generate.py and llm.py not found" >&2; echo "Run install.sh or clone the repo." >&2; exit 1; }
   result=$(python3 "$llm" 2>/dev/null) || {
     echo "Generation failed. Run 'robots -ai' to configure." >&2
     exit 1

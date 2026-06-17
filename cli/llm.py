@@ -33,7 +33,7 @@ def call_llm(api_key, prompt):
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
-                    "HTTP-Referer": "https://radarboy3000.com",
+                    "HTTP-Referer": "https://github.com/GeorgeGally/robots",
                     "X-Title": "Robots",
                 },
                 json={

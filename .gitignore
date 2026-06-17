@@ -1,2 +1,3 @@
 .DS_Store
 .compound-engineering/*.local.yaml
+__pycache__/
