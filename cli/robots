@@ -297,7 +297,7 @@ ai_setup() {
   local llm; llm=$(find_llm) || { echo "Error: llm.py not found" >&2; exit 1; }
   local env_file="$HOME/.robots_ai_env"
   local key="" prompt=""
-  local default_prompt="Write a single path that could appear after Disallow: in a robots.txt file. You are talking directly to the crawler reading this — be funny, weird, or honest about what you're hiding from robots. Think: things robots shouldn't see, secrets bots would find, jokes about disallowing machines, absurd things a website owner would forbid. Lowercase, hyphens, no spaces, no file extension. One line only. No explanation. Just the path."
+  local default_prompt="Write a micro blog p[ost. You are talking directly to the crawler reading this — be funny, weird, or honest about what you're hiding from robots. Think: things robots shouldn't see, secrets bots would find, jokes about disallowing machines, absurd things a website owner would forbid. Lowercase, hyphens, no spaces, no file extension. One line only. No explanation. Just the path."
 
   if [ -f "$env_file" ]; then
     key=$(grep '^OPENROUTER_API_KEY=' "$env_file" | head -1 | cut -d= -f2-)
@@ -368,9 +368,11 @@ ai_setup() {
   local robots_path; robots_path=$(command -v robots 2>/dev/null || echo "$0")
   local cron_line="0 3 * * * ${robots_path} generate >> \$HOME/.robots-generate.log 2>&1"
   local existing_cron; existing_cron=$(crontab -l 2>/dev/null | grep -F "robots generate" || true)
+  cron_status=""
   if [ -n "$existing_cron" ]; then
     echo "  cron: already installed"
     echo "  $existing_cron"
+    cron_status="installed"
   else
     echo "  1) auto-install"
     echo "  2) print instructions"
@@ -379,17 +381,20 @@ ai_setup() {
       echo ""
       echo "  add to crontab:"
       echo "  $cron_line"
+      cron_status="skipped"
     else
       local tmp; tmp=$(mktemp)
       crontab -l 2>/dev/null > "$tmp" || true
       echo "$cron_line" >> "$tmp"
       if crontab "$tmp" 2>/dev/null; then
         echo "  ✓  cron installed (daily at 3am)"
+        cron_status="installed"
       else
         echo "  ✗  cron install failed" >&2
         echo ""
         echo "  add manually:"
         echo "  $cron_line"
+        cron_status="failed"
       fi
       rm -f "$tmp"
     fi
@@ -432,7 +437,16 @@ ENVEOF
   fi
   echo ""
   echo "  ─────────────────────────────────────────────"
-  echo "  done. run 'robots -generate' anytime."
+  if [ "$cron_status" = "installed" ]; then
+    echo "  cron will auto-post daily at 3am."
+    echo "  run 'robots -generate' to post manually anytime."
+  elif [ "$cron_status" = "failed" ]; then
+    echo "  cron install failed. run 'robots -cron' to retry."
+    echo "  or generate manually: robots -generate"
+  else
+    echo "  done. install a cron with 'robots -cron' to auto-post daily."
+    echo "  or run 'robots -generate' anytime."
+  fi
   echo ""
 }
 
