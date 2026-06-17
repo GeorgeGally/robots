@@ -120,7 +120,13 @@ def call_llm(api_key, user_prompt):
                 timeout=60,
             )
             response.raise_for_status()
-            content = response.json()["choices"][0]["message"]["content"]
+            data = response.json()
+            if "choices" not in data or not data["choices"]:
+                if attempt < 2:
+                    continue
+                raise RuntimeError(f"LLM returned no choices")
+            message = data["choices"][0]["message"]
+            content = message.get("content") or message.get("reasoning") or ""
             if content and content.strip():
                 return content.strip()
         except Exception:

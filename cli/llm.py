@@ -49,9 +49,11 @@ def call_llm(api_key, prompt):
                 if attempt < 2:
                     continue
                 raise RuntimeError(f"LLM returned no choices: {json.dumps(data)}")
-            content = data["choices"][0]["message"]["content"]
+            message = data["choices"][0]["message"]
+            content = message.get("content") or message.get("reasoning") or ""
             if content and content.strip():
-                return content.strip()
+                line = content.strip().split("\n")[0].strip()
+                return line
             if attempt < 2:
                 continue
             raise RuntimeError(f"LLM returned empty content: {json.dumps(data)}")
