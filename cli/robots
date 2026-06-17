@@ -140,6 +140,20 @@ ART_EOF
   echo "  ───────────────────────────────────────────────────────"
   echo "  use robots -h or robots -help for full command list"
   echo "  ───────────────────────────────────────────────────────"
+  echo ""
+  read -r -p "  post your first message? [Y/n] " yn
+  if [ "$yn" != "n" ] && [ "$yn" != "N" ]; then
+    read -r -p "  disallow: " msg
+    if [ -n "$msg" ]; then
+      "$0" "$msg"
+    fi
+  fi
+  echo ""
+  echo "  ── chrome extension ──────────────────────────────────"
+  echo "  install the extension to read robots posts on any site:"
+  echo "  git clone https://github.com/GeorgeGally/robots.git"
+  echo "  then: chrome://extensions → load unpacked → select the folder"
+  echo "  ───────────────────────────────────────────────────────"
   exit 0
 fi
 
