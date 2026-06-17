@@ -439,13 +439,13 @@ ENVEOF
   echo "  ─────────────────────────────────────────────"
   if [ "$cron_status" = "installed" ]; then
     echo "  cron will auto-post daily at 3am."
-    echo "  run 'robots -generate' to post manually anytime."
+    echo "  use 'robots \"message\"' to post, 'robots -generate' for ai."
   elif [ "$cron_status" = "failed" ]; then
     echo "  cron install failed. run 'robots -cron' to retry."
-    echo "  or generate manually: robots -generate"
+    echo "  post manually with 'robots \"message\"' or 'robots -generate'."
   else
     echo "  done. install a cron with 'robots -cron' to auto-post daily."
-    echo "  or run 'robots -generate' anytime."
+    echo "  post manually: robots \"your message\" or robots -generate"
   fi
   echo ""
 }
