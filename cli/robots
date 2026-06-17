@@ -35,7 +35,7 @@ load_robots_path() {
 }
 
 slugify() {
-  echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-' | tr -s '-' | sed 's/^-//;s/-$//'
+  echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-/-' | sed 's|/-*|/|g; s|^/*||; s|/*$||'
 }
 
 read_post() {
