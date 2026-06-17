@@ -247,6 +247,7 @@ if [ "${1:-}" = "-help" ] || [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; the
   echo "  robots \"your message\"   —  post"
   echo "  robots -ai              —  configure ai posting"
   echo "  robots -generate        —  generate with ai"
+  echo "  robots -cron            —  check or install daily cron"
   echo "  robots -setup [path]    —  set robots.txt path"
   echo "  robots -update          —  pull latest version"
   echo "  robots -help            —  show this"
@@ -358,6 +359,40 @@ ai_setup() {
     fi
   fi
 
+  # --- Cron ---
+  echo ""
+  echo "  ── cron ─────────────────────────────────────"
+  echo ""
+  local robots_path; robots_path=$(command -v robots 2>/dev/null || echo "$0")
+  local cron_line="0 3 * * * ${robots_path} generate >> \$HOME/.robots-generate.log 2>&1"
+  local existing_cron; existing_cron=$(crontab -l 2>/dev/null | grep -F "robots generate" || true)
+  if [ -n "$existing_cron" ]; then
+    echo "  cron: already installed"
+    echo "  $existing_cron"
+  else
+    echo "  1) auto-install"
+    echo "  2) print instructions"
+    read -r -p "  choose [1/2]: " choice
+    if [ "$choice" = "2" ]; then
+      echo ""
+      echo "  add to crontab:"
+      echo "  $cron_line"
+    else
+      local tmp; tmp=$(mktemp)
+      crontab -l 2>/dev/null > "$tmp" || true
+      echo "$cron_line" >> "$tmp"
+      if crontab "$tmp" 2>/dev/null; then
+        echo "  ✓  cron installed (daily at 3am)"
+      else
+        echo "  ✗  cron install failed" >&2
+        echo ""
+        echo "  add manually:"
+        echo "  $cron_line"
+      fi
+      rm -f "$tmp"
+    fi
+  fi
+
   # --- Save ---
   cat > "$env_file" <<ENVEOF
 OPENROUTER_API_KEY=$key
@@ -390,16 +425,32 @@ ENVEOF
       echo "  🤖  posted: /${slug}/"
     fi
   fi
+  echo ""
+  echo "  ─────────────────────────────────────────────"
+  echo "  done. run 'robots -generate' anytime."
+  echo ""
+}
 
-  # --- Cron ---
+if [ "${1:-}" = "-ai" ] || [ "${1:-}" = "ai" ]; then
+  load_robots_path
+  if [ "${2:-}" = "--reset" ]; then
+    rm -f "$HOME/.robots_ai_env"
+  fi
+  ai_setup
+  exit 0
+fi
+
+if [ "${1:-}" = "-cron" ] || [ "${1:-}" = "cron" ]; then
   echo ""
-  echo "  ── cron ─────────────────────────────────────"
-  echo ""
-  local robots_path; robots_path=$(command -v robots 2>/dev/null || echo "$0")
-  local cron_line="0 3 * * * ${robots_path} generate >> \$HOME/.robots-generate.log 2>&1"
-  if crontab -l 2>/dev/null | grep -qF "$cron_line"; then
+  robots_path=$(command -v robots 2>/dev/null || echo "$0")
+  cron_line="0 3 * * * ${robots_path} generate >> \$HOME/.robots-generate.log 2>&1"
+  existing_cron=$(crontab -l 2>/dev/null | grep -F "robots generate" || true)
+  if [ -n "$existing_cron" ]; then
     echo "  cron: already installed"
+    echo "  $existing_cron"
   else
+    echo "  no cron job found."
+    echo ""
     echo "  1) auto-install"
     echo "  2) print instructions"
     read -r -p "  choose [1/2]: " choice
@@ -408,7 +459,7 @@ ENVEOF
       echo "  add to crontab:"
       echo "  $cron_line"
     else
-      local tmp; tmp=$(mktemp)
+      tmp=$(mktemp)
       crontab -l 2>/dev/null > "$tmp" || true
       echo "$cron_line" >> "$tmp"
       if crontab "$tmp" 2>/dev/null; then
@@ -423,17 +474,6 @@ ENVEOF
     fi
   fi
   echo ""
-  echo "  ─────────────────────────────────────────────"
-  echo "  done. run 'robots -generate' anytime."
-  echo ""
-}
-
-if [ "${1:-}" = "-ai" ] || [ "${1:-}" = "ai" ]; then
-  load_robots_path
-  if [ "${2:-}" = "--reset" ]; then
-    rm -f "$HOME/.robots_ai_env"
-  fi
-  ai_setup
   exit 0
 fi
 
