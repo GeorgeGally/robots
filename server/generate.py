@@ -109,44 +109,52 @@ def call_llm(api_key, user_prompt):
 
 
 def parse_llm_response(content):
-    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
-    content = re.sub(r'<thinking>.*?</thinking>', '', content, flags=re.DOTALL)
+    think_blocks = re.findall(r'<think>(.*?)</think>', content, flags=re.DOTALL)
+    think_blocks += re.findall(r'<thinking>(.*?)</thinking>', content, flags=re.DOTALL)
+    content_clean = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
+    content_clean = re.sub(r'<thinking>.*?</thinking>', '', content_clean, flags=re.DOTALL)
 
-    post_match = re.search(r'<post>(.*?)</post>', content, re.DOTALL)
-    haiku_match = re.search(r'<haiku>(.*?)</haiku>', content, re.DOTALL)
+    for source in (content_clean, "\n".join(think_blocks)):
+        if not source.strip():
+            continue
 
-    if post_match:
-        post = post_match.group(1).strip()
+        post_match = re.search(r'<post>(.*?)</post>', source, re.DOTALL)
+        haiku_match = re.search(r'<haiku>(.*?)</haiku>', source, re.DOTALL)
+
+        if post_match:
+            post = post_match.group(1).strip()
+            haiku = []
+            if haiku_match:
+                for line in haiku_match.group(1).strip().split("\n"):
+                    stripped = line.strip()
+                    if stripped:
+                        haiku.append(stripped)
+            return post, haiku[:3]
+
+        lines = source.strip().split("\n")
+        cleaned = []
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome,? bots|here is|here\'s|i\'ll|okay|now|first)', stripped):
+                continue
+            cleaned.append(stripped)
+
+        post = ""
         haiku = []
-        if haiku_match:
-            for line in haiku_match.group(1).strip().split("\n"):
-                stripped = line.strip()
-                if stripped:
-                    haiku.append(stripped)
-        haiku = haiku[:3]
-        return post, haiku
+        for line in cleaned:
+            if line.startswith("# 🤖"):
+                post = line.replace("# 🤖", "").strip()
+            elif line.startswith("#") and not line.startswith("# 🤖") and len(haiku) < 3:
+                text = line.lstrip("#").strip()
+                if text:
+                    haiku.append(text)
 
-    lines = content.strip().split("\n")
-    cleaned = []
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome,? bots)', stripped):
-            continue
-        cleaned.append(stripped)
+        if post:
+            return post, haiku
 
-    post = ""
-    haiku = []
-    for line in cleaned:
-        if line.startswith("# 🤖"):
-            post = line.replace("# 🤖", "").strip()
-        elif line.startswith("#") and not line.startswith("# 🤖") and len(haiku) < 3:
-            text = line.lstrip("#").strip()
-            if text:
-                haiku.append(text)
-
-    return post, haiku
+    return "", []
 
 
 PATH_TEMPLATES = [
