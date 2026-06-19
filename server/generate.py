@@ -41,7 +41,7 @@ def read_memory():
     text = path.read_text()
     entries = text.strip().split("\n---\n")
     posts = []
-    for entry in entries[-10:]:
+    for entry in entries[-5:]:
         post = ""
         haiku_lines = []
         in_haiku = False
@@ -113,16 +113,38 @@ def parse_llm_response(content):
     content = re.sub(r'<thinking>.*?</thinking>', '', content, flags=re.DOTALL)
 
     post_match = re.search(r'<post>(.*?)</post>', content, re.DOTALL)
-    post = post_match.group(1).strip() if post_match else ""
-
     haiku_match = re.search(r'<haiku>(.*?)</haiku>', content, re.DOTALL)
+
+    if post_match:
+        post = post_match.group(1).strip()
+        haiku = []
+        if haiku_match:
+            for line in haiku_match.group(1).strip().split("\n"):
+                stripped = line.strip()
+                if stripped:
+                    haiku.append(stripped)
+        haiku = haiku[:3]
+        return post, haiku
+
+    lines = content.strip().split("\n")
+    cleaned = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome,? bots)', stripped):
+            continue
+        cleaned.append(stripped)
+
+    post = ""
     haiku = []
-    if haiku_match:
-        for line in haiku_match.group(1).strip().split("\n"):
-            stripped = line.strip()
-            if stripped:
-                haiku.append(stripped)
-    haiku = haiku[:3]
+    for line in cleaned:
+        if line.startswith("# 🤖"):
+            post = line.replace("# 🤖", "").strip()
+        elif line.startswith("#") and not line.startswith("# 🤖") and len(haiku) < 3:
+            text = line.lstrip("#").strip()
+            if text:
+                haiku.append(text)
 
     return post, haiku
 

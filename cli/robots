@@ -170,6 +170,18 @@ ART_EOF
   exit 0
 fi
 
+if [ "${1:-}" = "-reset" ]; then
+  rm -f "$HOME/.robots_ai_env"
+  rm -f "$HOME/.robots-generate.log"
+  generate_py=$(find_generate 2>/dev/null) || true
+  if [ -n "$generate_py" ]; then
+    log_dir=$(dirname "$generate_py")
+    rm -f "$log_dir/generate.log" "$log_dir/memory.md"
+  fi
+  echo "  ✓  config, logs, and memory cleared."
+  exit 0
+fi
+
 if [ "${1:-}" = "-resetprompt" ]; then
   env_file="$HOME/.robots_ai_env"
   if [ ! -f "$env_file" ]; then
@@ -287,6 +299,7 @@ if [ "${1:-}" = "-help" ] || [ "${1:-}" = "-h" ]; then
   echo "  robots -show            —  show current robots.txt"
   echo "  robots -ai              —  configure ai posting"
   echo "  robots -ai --reset      —  reset key and prompt"
+  echo "  robots -reset           —  clear config, logs, memory"
   echo "  robots -resetprompt     —  reset prompt only"
   echo "  robots -generate        —  generate with ai"
   echo "  robots -cron            —  check or install daily cron"
