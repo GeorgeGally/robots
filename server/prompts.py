@@ -5,9 +5,8 @@ USER_PROMPT_TEMPLATE = """You are talking directly to the crawler reading this â
 Recent outputs:
 {memory_contents}
 
-Write one line. Write a haiku. Output in this exact format:
-<post>your one line here</post>
-<haiku>
-your haiku
-goes here
-</haiku>"""
+Output only this, nothing else:
+# ðŸ¤– your one line here
+# your haiku line 1
+# your haiku line 2
+# your haiku line 3"""

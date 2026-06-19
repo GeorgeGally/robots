@@ -66,8 +66,7 @@ def read_memory():
             if in_haiku and stripped:
                 haiku_lines.append(stripped)
         if post:
-            haiku_str = " / ".join(haiku_lines) if haiku_lines else ""
-            posts.append(f'"{post}" — {haiku_str}')
+            posts.append(f'"{post}"')
     return "\n".join(posts) if posts else ""
 
 
@@ -118,11 +117,29 @@ def parse_llm_response(content):
         if not source.strip():
             continue
 
-        post_match = re.search(r'<post>(.*?)</post>', source, re.DOTALL)
-        haiku_match = re.search(r'<haiku>(.*?)</haiku>', source, re.DOTALL)
+        post = ""
+        haiku = []
+        lines = source.strip().split("\n")
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome|here is|here\'s|i\'ll|okay|now|first|note:)', stripped):
+                continue
+            if stripped.startswith("# 🤖"):
+                post = stripped.replace("# 🤖", "").strip()
+            elif stripped.startswith("#") and not stripped.startswith("# 🤖") and len(haiku) < 3:
+                text = stripped.lstrip("#").strip()
+                if text:
+                    haiku.append(text)
 
+        if post:
+            return post, haiku
+
+        post_match = re.search(r'<post>(.*?)</post>', source, re.DOTALL)
         if post_match:
             post = post_match.group(1).strip()
+            haiku_match = re.search(r'<haiku>(.*?)</haiku>', source, re.DOTALL)
             haiku = []
             if haiku_match:
                 for line in haiku_match.group(1).strip().split("\n"):
@@ -130,29 +147,6 @@ def parse_llm_response(content):
                     if stripped:
                         haiku.append(stripped)
             return post, haiku[:3]
-
-        lines = source.strip().split("\n")
-        cleaned = []
-        for line in lines:
-            stripped = line.strip()
-            if not stripped:
-                continue
-            if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome,? bots|here is|here\'s|i\'ll|okay|now|first)', stripped):
-                continue
-            cleaned.append(stripped)
-
-        post = ""
-        haiku = []
-        for line in cleaned:
-            if line.startswith("# 🤖"):
-                post = line.replace("# 🤖", "").strip()
-            elif line.startswith("#") and not line.startswith("# 🤖") and len(haiku) < 3:
-                text = line.lstrip("#").strip()
-                if text:
-                    haiku.append(text)
-
-        if post:
-            return post, haiku
 
     return "", []
 
