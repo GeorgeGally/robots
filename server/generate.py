@@ -139,13 +139,30 @@ def extract_robots_txt(content):
     import re
     content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
     content = re.sub(r'<thinking>.*?</thinking>', '', content, flags=re.DOTALL)
+    thinking_patterns = [
+        r'(?i)^(?:let me|i need to|i should|the task says|from the last|current disallows|i have \d|actually,|or more|let\'s list|that\'s a total).*',
+        r'^- \d{4}-\d{2}-\d{2}:',
+        r'(?i)^the (?:rule|memory|model|output|prompt)',
+    ]
     lines = content.strip().split("\n")
     robots_lines = []
+    found_start = False
     for line in lines:
         stripped = line.strip()
         if not stripped:
             if robots_lines:
                 robots_lines.append("")
+            continue
+        if stripped.startswith("# 🤖") or stripped.startswith("#\t🤖"):
+            found_start = True
+        if not found_start:
+            continue
+        skip = False
+        for pat in thinking_patterns:
+            if re.match(pat, stripped):
+                skip = True
+                break
+        if skip:
             continue
         if (stripped.startswith("#") or
             stripped.lower().startswith("user-agent:") or
