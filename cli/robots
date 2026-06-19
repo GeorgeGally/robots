@@ -112,7 +112,7 @@ PYEOF
 
 # --- commands ---
 
-if [ "${1:-}" = "-setup" ] || [ "${1:-}" = "setup" ]; then
+if [ "${1:-}" = "-setup" ]; then
   path="${2:-}"
   if [ -z "$path" ]; then
     read -r -p "robots.txt path (absolute): " path
@@ -163,7 +163,7 @@ ART_EOF
   exit 0
 fi
 
-if [ "${1:-}" = "-update" ] || [ "${1:-}" = "update" ]; then
+if [ "${1:-}" = "-update" ]; then
   REPO_FILE="$HOME/.robots_repo"
   if [ ! -f "$REPO_FILE" ]; then
     echo "Error: repo path not saved. Re-run install.sh from the robots directory." >&2
@@ -240,7 +240,7 @@ ROBOT_EOF
   echo ""
   cat <<'ART_EOF'
   .%%%%%....%%%%...%%%%%....%%%%...%%%%%%...%%%%...........%%..%%..%%%%%...%%%%%....%%%%...%%%%%%..%%%%%%..%%%%%%.
-  .%%..%%..%%..%%..%%..%%..%%..%%....%%....%%..............%%..%%..%%..%%..%%..%%..%%..%%....%%....%%......%%..%%.
+  .%%. .%%..%%..%%..%%..%%..%%..%%....%%....%%..............%%..%%..%%..%%..%%..%%..%%..%%....%%....%%......%%..%%.
   .%%%%%...%%..%%..%%%%%...%%..%%....%%.....%%%%...........%%..%%..%%%%%...%%..%%..%%%%%%....%%....%%%%....%%..%%.
   .%%..%%..%%..%%..%%..%%..%%..%%....%%........%%..........%%..%%..%%......%%..%%..%%..%%....%%....%%......%%..%%.
   .%%..%%...%%%%...%%%%%....%%%%.....%%.....%%%%............%%%%...%%......%%%%%...%%..%%....%%....%%%%%%..%%%%%%.
@@ -251,7 +251,7 @@ ART_EOF
   exit 0
 fi
 
-if [ "${1:-}" = "-help" ] || [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+if [ "${1:-}" = "-help" ] || [ "${1:-}" = "-h" ]; then
   echo ""
   echo "  robots                  —  interactive prompt"
   echo "  robots \"your message\"   —  post"
@@ -260,7 +260,7 @@ if [ "${1:-}" = "-help" ] || [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; the
   echo "  robots -cron            —  check or install daily cron"
   echo "  robots -setup [path]    —  set robots.txt path"
   echo "  robots -update          —  pull latest version"
-  echo "  robots -help            —  show this"
+  echo "  robots -h               —  show this"
   exit 0
 fi
 
@@ -467,7 +467,7 @@ ENVEOF
   echo ""
 }
 
-if [ "${1:-}" = "-ai" ] || [ "${1:-}" = "ai" ]; then
+if [ "${1:-}" = "-ai" ]; then
   load_robots_path || {
     echo ""
     echo "  robots.txt not configured yet."
@@ -495,7 +495,7 @@ if [ "${1:-}" = "-ai" ] || [ "${1:-}" = "ai" ]; then
   exit 0
 fi
 
-if [ "${1:-}" = "-cron" ] || [ "${1:-}" = "cron" ]; then
+if [ "${1:-}" = "-cron" ]; then
   echo ""
   robots_path=$(command -v robots 2>/dev/null || echo "$0")
   cron_line="0 3 * * * PATH=\"/usr/local/bin:/usr/bin:/bin\" ${robots_path} generate >> \$HOME/.robots-generate.log 2>&1"
@@ -532,7 +532,7 @@ if [ "${1:-}" = "-cron" ] || [ "${1:-}" = "cron" ]; then
   exit 0
 fi
 
-if [ "${1:-}" = "-generate" ] || [ "${1:-}" = "generate" ]; then
+if [ "${1:-}" = "-generate" ]; then
   load_robots_path
   generate_py=$(find_generate) || true
   if [ -n "$generate_py" ]; then
@@ -544,8 +544,15 @@ if [ "${1:-}" = "-generate" ] || [ "${1:-}" = "generate" ]; then
         break
       fi
     done
-    python3 "$generate_py" 2>>"$HOME/.robots-generate.log"
-    exit $?
+    echo "  generating…"
+    output=$(python3 "$generate_py" 2>>"$HOME/.robots-generate.log")
+    if [ $? -eq 0 ]; then
+      echo "$output"
+    else
+      echo "  ✗  generation failed. check $HOME/.robots-generate.log" >&2
+      exit 1
+    fi
+    exit 0
   fi
   # fallback to simple generator
   llm=$(find_llm) || { echo "Error: generate.py and llm.py not found" >&2; echo "Run install.sh or clone the repo." >&2; exit 1; }
