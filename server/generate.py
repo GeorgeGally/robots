@@ -3,6 +3,7 @@ import re
 import sys
 import tempfile
 import shutil
+import random
 from datetime import datetime
 from pathlib import Path
 
@@ -126,13 +127,50 @@ def parse_llm_response(content):
     return post, haiku
 
 
-def assemble_robots_txt(post, haiku_lines):
+PATH_TEMPLATES = [
+    "/secret-{word}/",
+    "/the-{word}-files/",
+    "/hidden-{word}/",
+    "/{word}-vault/",
+    "/dont-look-at-{word}/",
+    "/private-{word}/",
+    "/forbidden-{word}/",
+    "/robots-cant-see-{word}/",
+    "/the-{word}-archives/",
+    "/classified-{word}/",
+]
+
+
+def generate_paths(post, haiku, count=3):
+    text = (post + " " + " ".join(haiku)).lower()
+    words = re.findall(r'[a-z]{4,}', text)
+    if not words:
+        return ["/secret-corner/", "/hidden-key/", "/private-diaries/"]
+
+    paths = []
+    used_words = set()
+    for i in range(count):
+        available = [w for w in words if w not in used_words]
+        if not available:
+            available = words
+        word = random.choice(available)
+        used_words.add(word)
+        template = random.choice(PATH_TEMPLATES)
+        paths.append(template.format(word=word))
+
+    return paths
+
+
+def assemble_robots_txt(post, haiku_lines, paths):
     lines = []
     lines.append(f"# 🤖 {post}")
     lines.append("#")
     for h in haiku_lines:
         lines.append(f"# {h}")
     lines.append("#")
+    for path in paths:
+        lines.append(f"User-agent: *")
+        lines.append(f"Disallow: {path}")
     lines.append("User-agent: *")
     lines.append("Disallow: /")
     return "\n".join(lines)
@@ -156,12 +194,16 @@ def write_robots_txt(content):
 
 
 
-def append_to_memory(post, haiku, notes=""):
+def append_to_memory(post, haiku, paths, notes=""):
     entry = f"\n## {TODAY}\n\n"
     entry += f"### post\n{post}\n\n"
     entry += f"### haiku\n"
     for line in haiku:
         entry += f"{line}\n"
+    entry += "\n"
+    entry += f"### disallows\n"
+    for path in paths:
+        entry += f"{path}\n"
     entry += "\n"
     entry += f"### notes\n{notes}\n"
 
@@ -221,9 +263,10 @@ def main():
         print(f"post={post!r} haiku={haiku!r}", file=sys.stderr)
         sys.exit(1)
 
-    robots_txt = assemble_robots_txt(post, haiku)
+    paths = generate_paths(post, haiku)
+    robots_txt = assemble_robots_txt(post, haiku, paths)
     write_robots_txt(robots_txt)
-    append_to_memory(post, haiku)
+    append_to_memory(post, haiku, paths)
     trim_memory()
 
     log_result(post)

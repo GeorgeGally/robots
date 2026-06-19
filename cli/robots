@@ -29,6 +29,13 @@ load_robots_path() {
       return 0
     fi
   done
+  # Dreamhost subdirectory: $HOME/<domain>/<subdomain>/robots.txt
+  for d in "$HOME"/*/*/; do
+    if [ -f "${d}robots.txt" ]; then
+      ROBOTS="${d}robots.txt"
+      return 0
+    fi
+  done
   echo "Error: robots.txt not found. Run: robots -setup /path/to/robots.txt" >&2
   echo "       Or run: robots -setup  (interactive prompt)" >&2
   exit 1
