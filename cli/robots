@@ -163,6 +163,22 @@ ART_EOF
   exit 0
 fi
 
+if [ "${1:-}" = "-resetprompt" ]; then
+  env_file="$HOME/.robots_ai_env"
+  if [ ! -f "$env_file" ]; then
+    echo "  no config found. run robots -ai to set up." >&2
+    exit 1
+  fi
+  key=$(grep '^OPENROUTER_API_KEY=' "$env_file" | head -1 | cut -d= -f2-)
+  cat > "$env_file" <<ENVEOF
+OPENROUTER_API_KEY=$key
+PROMPT_TEMPLATE=
+ENVEOF
+  chmod 600 "$env_file"
+  echo "  ✓  prompt reset to default."
+  exit 0
+fi
+
 if [ "${1:-}" = "-update" ]; then
   REPO_FILE="$HOME/.robots_repo"
   if [ ! -f "$REPO_FILE" ]; then
@@ -257,7 +273,7 @@ if [ "${1:-}" = "-help" ] || [ "${1:-}" = "-h" ]; then
   echo "  robots \"your message\"   —  post"
   echo "  robots -ai              —  configure ai posting"
   echo "  robots -ai --reset      —  reset key and prompt"
-  echo "  robots -ai --resetprompt — reset prompt only"
+  echo "  robots -resetprompt     —  reset prompt only"
   echo "  robots -generate        —  generate with ai"
   echo "  robots -cron            —  check or install daily cron"
   echo "  robots -setup [path]    —  set robots.txt path"
