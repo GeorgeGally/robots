@@ -111,7 +111,6 @@ def call_llm(api_key, user_prompt):
                 json={
                     "model": "openrouter/free",
                     "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": user_prompt},
                     ],
                     "temperature": 0.8,
