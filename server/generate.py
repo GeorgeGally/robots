@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-import json
 import tempfile
 import shutil
 from datetime import datetime
@@ -9,7 +8,7 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
-from prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
+from prompts import USER_PROMPT_TEMPLATE
 
 BASE_DIR = Path(__file__).parent.resolve()
 
@@ -39,21 +38,36 @@ def read_memory():
         return ""
 
     text = path.read_text()
-    lines = text.strip().split("\n")
-    disallows = []
-    in_disallows = False
-    for line in lines:
-        stripped = line.strip()
-        if stripped.lower() == "### disallows":
-            in_disallows = True
-            continue
-        if in_disallows:
-            if stripped.startswith("###") or stripped == "---":
-                in_disallows = False
+    entries = text.strip().split("\n---\n")
+    posts = []
+    for entry in entries[-10:]:
+        post = ""
+        haiku_lines = []
+        in_haiku = False
+        in_post = False
+        for line in entry.strip().split("\n"):
+            stripped = line.strip()
+            if stripped.lower() == "### post":
+                in_post = True
+                in_haiku = False
                 continue
-            if stripped.startswith("/"):
-                disallows.append(stripped)
-    return "\n".join(disallows[-20:]) if disallows else ""
+            if stripped.lower() == "### haiku":
+                in_haiku = True
+                in_post = False
+                continue
+            if stripped.startswith("###"):
+                in_post = False
+                in_haiku = False
+                continue
+            if in_post and stripped:
+                post = stripped
+                in_post = False
+            if in_haiku and stripped:
+                haiku_lines.append(stripped)
+        if post:
+            haiku_str = " / ".join(haiku_lines) if haiku_lines else ""
+            posts.append(f'"{post}" — {haiku_str}')
+    return "\n".join(posts) if posts else ""
 
 
 def call_llm(api_key, user_prompt):
@@ -86,31 +100,43 @@ def call_llm(api_key, user_prompt):
             message = data["choices"][0]["message"]
             content = message.get("content") or ""
             if content and content.strip():
-                return extract_robots_txt(content.strip())
+                return content.strip()
         except Exception:
             if attempt == 2:
                 raise
     raise RuntimeError("LLM returned empty content")
 
 
-def extract_robots_txt(content):
-    import re
+def parse_llm_response(content):
     content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
     content = re.sub(r'<thinking>.*?</thinking>', '', content, flags=re.DOTALL)
-    lines = content.strip().split("\n")
-    result_lines = []
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have \d|actually|or more|let\'s)', stripped):
-            continue
-        result_lines.append(stripped)
-    return "\n".join(result_lines[:10]).strip() if result_lines else content
+
+    post_match = re.search(r'<post>(.*?)</post>', content, re.DOTALL)
+    post = post_match.group(1).strip() if post_match else ""
+
+    haiku_match = re.search(r'<haiku>(.*?)</haiku>', content, re.DOTALL)
+    haiku = []
+    if haiku_match:
+        for line in haiku_match.group(1).strip().split("\n"):
+            stripped = line.strip()
+            if stripped:
+                haiku.append(stripped)
+    haiku = haiku[:3]
+
+    return post, haiku
 
 
-def validate_output(content):
-    return bool(content and content.strip())
+def assemble_robots_txt(post, haiku_lines):
+    lines = []
+    lines.append(f"# 🤖 {post}")
+    lines.append("#")
+    for h in haiku_lines:
+        lines.append(f"# {h}")
+    lines.append("#")
+    lines.append("User-agent: *")
+    lines.append("Disallow: /")
+    return "\n".join(lines)
+
 
 
 def write_robots_txt(content):
@@ -129,55 +155,14 @@ def write_robots_txt(content):
         raise
 
 
-def parse_generated_content(content):
-    lines = content.strip().split("\n")
 
-    bar = ""
-    haiku = []
-    disallows = []
-    crawlers_seen = set()
-    state = "bar"
-
-    for line in lines:
-        stripped = line.strip()
-
-        if stripped.startswith("#"):
-            text = stripped.lstrip("#").strip()
-            if not text:
-                continue
-            if state == "bar":
-                bar = text
-                state = "haiku"
-            elif state == "haiku" and len(haiku) < 3:
-                haiku.append(text)
-                if len(haiku) == 3:
-                    state = "directives"
-
-        elif stripped.startswith("User-agent:"):
-            agent = stripped.split(":", 1)[1].strip()
-            if agent != "*":
-                crawlers_seen.add(agent)
-
-        elif stripped.startswith("Disallow:"):
-            path = stripped.split(":", 1)[1].strip()
-            if path:
-                disallows.append(path)
-
-    return bar, haiku, disallows, crawlers_seen
-
-
-def append_to_memory(bar, haiku, disallows, crawlers_seen, notes=""):
+def append_to_memory(post, haiku, notes=""):
     entry = f"\n## {TODAY}\n\n"
-    entry += f"### bar\n{bar}\n\n"
+    entry += f"### post\n{post}\n\n"
     entry += f"### haiku\n"
     for line in haiku:
         entry += f"{line}\n"
     entry += "\n"
-    entry += f"### disallows\n"
-    for path in disallows:
-        entry += f"{path}\n"
-    entry += "\n"
-    entry += f"### crawlers seen\n{', '.join(sorted(crawlers_seen))}\n\n"
     entry += f"### notes\n{notes}\n"
 
     with open(MEMORY_PATH, "a") as f:
@@ -198,11 +183,10 @@ def trim_memory(max_entries=90):
     MEMORY_PATH.write_text("\n---\n".join(kept) + "\n")
 
 
-def log_result(crawlers_seen, bar_line, success=True):
+def log_result(post_line, success=True):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    crawlers = ", ".join(sorted(crawlers_seen)) if crawlers_seen else "none"
     status = "OK" if success else "FAIL"
-    line = f"[{timestamp}] {status} | crawlers: {crawlers} | bar: {bar_line}\n"
+    line = f"[{timestamp}] {status} | post: {post_line}\n"
 
     with open(GENERATE_LOG, "a") as f:
         f.write(line)
@@ -222,31 +206,28 @@ def main():
     )
 
     try:
-        content = call_llm(api_key, user_prompt)
+        raw_response = call_llm(api_key, user_prompt)
     except Exception as e:
-        bar_line = f"LLM call failed: {e}"
-        log_result(set(), bar_line, success=False)
+        post_line = f"LLM call failed: {e}"
+        log_result(post_line, success=False)
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    if not validate_output(content):
-        bar_line = content.split("\n")[0].lstrip("#").strip() if content else "(empty)"
-        log_result(set(), f"validation failed — {bar_line}", success=False)
-        first_line = content.split("\n")[0] if content else ""
+    post, haiku = parse_llm_response(raw_response)
+
+    if not post or len(haiku) < 3:
+        log_result(f"validation failed — {post or '(empty)'}", success=False)
         print("ERROR: Generated content failed validation", file=sys.stderr)
-        print(f"First line: {first_line}", file=sys.stderr)
-        print("The LLM may have returned thinking/explanation instead of robots.txt.", file=sys.stderr)
-        print("Try: robots -ai  (to reconfigure with a different prompt)", file=sys.stderr)
+        print(f"post={post!r} haiku={haiku!r}", file=sys.stderr)
         sys.exit(1)
 
-    write_robots_txt(content)
-
-    bar, haiku, disallows, crawlers_seen = parse_generated_content(content)
-    append_to_memory(bar, haiku, disallows, crawlers_seen)
+    robots_txt = assemble_robots_txt(post, haiku)
+    write_robots_txt(robots_txt)
+    append_to_memory(post, haiku)
     trim_memory()
 
-    log_result(crawlers_seen, bar)
-    print(f"OK | {TODAY} | {bar}")
+    log_result(post)
+    print(f"OK | {TODAY} | {post}")
 
 
 if __name__ == "__main__":
