@@ -179,6 +179,12 @@ ENVEOF
   exit 0
 fi
 
+if [ "${1:-}" = "-show" ]; then
+  load_robots_path
+  cat "$ROBOTS"
+  exit 0
+fi
+
 if [ "${1:-}" = "-update" ]; then
   REPO_FILE="$HOME/.robots_repo"
   if [ ! -f "$REPO_FILE" ]; then
@@ -271,6 +277,7 @@ if [ "${1:-}" = "-help" ] || [ "${1:-}" = "-h" ]; then
   echo ""
   echo "  robots                  —  interactive prompt"
   echo "  robots \"your message\"   —  post"
+  echo "  robots -show            —  show current robots.txt"
   echo "  robots -ai              —  configure ai posting"
   echo "  robots -ai --reset      —  reset key and prompt"
   echo "  robots -resetprompt     —  reset prompt only"
