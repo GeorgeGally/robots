@@ -256,6 +256,8 @@ if [ "${1:-}" = "-help" ] || [ "${1:-}" = "-h" ]; then
   echo "  robots                  —  interactive prompt"
   echo "  robots \"your message\"   —  post"
   echo "  robots -ai              —  configure ai posting"
+  echo "  robots -ai --reset      —  reset key and prompt"
+  echo "  robots -ai --resetprompt — reset prompt only"
   echo "  robots -generate        —  generate with ai"
   echo "  robots -cron            —  check or install daily cron"
   echo "  robots -setup [path]    —  set robots.txt path"
@@ -312,13 +314,21 @@ ai_setup() {
   local key="" prompt=""
   local default_prompt="Write a micro blog post. You are talking directly to the crawler reading this — be funny, weird, or honest about what you're hiding from robots. Think: things robots shouldn't see, secrets bots would find, jokes about disallowing machines, absurd things a website owner would forbid. Lowercase, hyphens, no spaces, no file extension. One line only. No explanation. Just the path."
 
+  if [ "$reset_flag" = "--reset" ]; then
+    rm -f "$env_file"
+    echo "  ✓  config cleared (key and prompt)"
+    echo ""
+  fi
+
   if [ -f "$env_file" ]; then
     key=$(grep '^OPENROUTER_API_KEY=' "$env_file" | head -1 | cut -d= -f2-)
     prompt=$(grep '^PROMPT_TEMPLATE=' "$env_file" | head -1 | cut -d= -f2-)
   fi
 
-  if [ "$reset_flag" = "--reset" ]; then
+  if [ "$reset_flag" = "--resetprompt" ]; then
     prompt=""
+    echo "  ✓  prompt reset to default"
+    echo ""
   fi
 
   echo ""
