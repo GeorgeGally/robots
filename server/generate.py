@@ -89,8 +89,8 @@ def call_llm(api_key, user_prompt):
                         "messages": [
                             {"role": "user", "content": user_prompt},
                         ],
-                        "temperature": 0.8,
-                        "max_tokens": 600,
+                    "temperature": 0.8,
+                    "max_tokens": 800,
                     },
                     timeout=60,
                 )
@@ -197,11 +197,9 @@ def assemble_robots_txt(post, haiku_lines, paths):
     for h in haiku_lines:
         lines.append(f"# {h}")
     lines.append("#")
-    for path in paths:
-        lines.append(f"User-agent: *")
-        lines.append(f"Disallow: {path}")
     lines.append("User-agent: *")
-    lines.append("Disallow: /")
+    for path in paths:
+        lines.append(f"Disallow: {path}")
     return "\n".join(lines)
 
 
