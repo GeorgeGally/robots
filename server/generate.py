@@ -263,6 +263,10 @@ def main():
         sys.exit(1)
 
     slug = slugify(post)
+    if not slug:
+        log_result(f"empty slug from post: {post!r}", success=False)
+        print("ERROR: Post text produced an empty slug", file=sys.stderr)
+        sys.exit(1)
     robots_txt = assemble_robots_txt(post, haiku)
     write_robots_txt(robots_txt)
     append_to_memory(post, haiku, [f"/{slug}/"])
