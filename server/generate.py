@@ -206,7 +206,7 @@ def main():
     memory = read_memory()
 
     user_prompt = USER_PROMPT_TEMPLATE.format(
-        memory_contents=memory or "(no memory yet — first run)",
+        memory_contents=memory or "",
     )
 
     try:
