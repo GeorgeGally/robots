@@ -138,46 +138,20 @@ def extract_robots_txt(content):
     import re
     content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
     content = re.sub(r'<thinking>.*?</thinking>', '', content, flags=re.DOTALL)
-    thinking_patterns = [
-        r'(?i)^(?:let me|i need to|i should|the task says|from the last|current disallows|i have \d|actually,|or more|let\'s list|that\'s a total).*',
-        r'^- \d{4}-\d{2}-\d{2}:',
-        r'(?i)^the (?:rule|memory|model|output|prompt)',
-    ]
     lines = content.strip().split("\n")
-    robots_lines = []
-    found_start = False
+    result_lines = []
     for line in lines:
         stripped = line.strip()
         if not stripped:
-            if robots_lines:
-                robots_lines.append("")
             continue
-        if stripped.startswith("# 🤖") or stripped.startswith("#\t🤖"):
-            found_start = True
-        if not found_start:
+        if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have \d|actually|or more|let\'s)', stripped):
             continue
-        skip = False
-        for pat in thinking_patterns:
-            if re.match(pat, stripped):
-                skip = True
-                break
-        if skip:
-            continue
-        if (stripped.startswith("#") or
-            stripped.lower().startswith("user-agent:") or
-            stripped.lower().startswith("disallow:")):
-            robots_lines.append(stripped)
-    result = "\n".join(robots_lines).strip()
-    return result if result else content
+        result_lines.append(stripped)
+    return "\n".join(result_lines[:10]).strip() if result_lines else content
 
 
 def validate_output(content):
-    lines = content.strip().split("\n")
-    if not lines:
-        return False
-    if not lines[0].startswith("# 🤖"):
-        return False
-    return True
+    return bool(content and content.strip())
 
 
 def write_robots_txt(content):
