@@ -1,3 +1,5 @@
 .DS_Store
 .compound-engineering/*.local.yaml
 __pycache__/
+server/memory.md
+server/generate.log

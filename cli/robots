@@ -221,13 +221,15 @@ if [ "${1:-}" = "-update" ]; then
     exit 1
   fi
   cd "$REPO"
-  git pull
+  git fetch origin 2>&1 || { echo "Error: git fetch failed. Check network and try again." >&2; exit 1; }
+  git checkout origin/main -- cli/robots cli/llm.py server/generate.py server/prompts.py
   DEST=$(command -v robots 2>/dev/null || echo "$HOME/bin/robots")
   cp cli/robots "$DEST"
   chmod +x "$DEST"
   DEST_DIR=$(dirname "$DEST")
   cp cli/llm.py "$DEST_DIR/llm.py"
   chmod +x "$DEST_DIR/llm.py" 2>/dev/null || true
+  echo "  ✓  updated to $(git log origin/main -1 --format='%h %s')"
   exec "$DEST" welcome
 fi
 
