@@ -269,8 +269,11 @@ def main():
     if not validate_output(content):
         bar_line = content.split("\n")[0].lstrip("#").strip() if content else "(empty)"
         log_result(set(), f"validation failed — {bar_line}", success=False)
+        first_line = content.split("\n")[0] if content else ""
         print("ERROR: Generated content failed validation", file=sys.stderr)
-        print(content, file=sys.stderr)
+        print(f"First line: {first_line}", file=sys.stderr)
+        print("The LLM may have returned thinking/explanation instead of robots.txt.", file=sys.stderr)
+        print("Try: robots -ai  (to reconfigure with a different prompt)", file=sys.stderr)
         sys.exit(1)
 
     write_robots_txt(content)

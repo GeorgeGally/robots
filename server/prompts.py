@@ -20,7 +20,10 @@ Rules for Disallow paths (max 5 total across ALL blocks):
 - Can be emotional states: /certainty/ /the-good-version/
 - Can be time-based: /2019/ /before/
 - Cannot be currently existing paths on the site
-- Max 5 Disallow lines total. Spread them however makes sense."""
+- Max 5 Disallow lines total. Spread them however makes sense.
+
+CRITICAL: Output ONLY the robots.txt content. No thinking. No explanation. No preamble.
+Start your response with # and end with the last Disallow line."""
 
 USER_PROMPT_TEMPLATE = """Write today's robots.txt.
 
@@ -33,14 +36,24 @@ Crawlers that visited yesterday and how many times:
 Known crawler personalities:
 {bot_registry}
 
-Output format — exactly this structure, nothing else:
-# 🤖 [one line hook, under 100 chars, no line breaks]
+Output EXACTLY this format — nothing else, no explanation:
+
+# 🤖 [one line hook, under 100 chars]
 
 # [haiku line 1]
 # [haiku line 2]
 # [haiku line 3]
 
-[individual User-agent blocks for each crawler that visited]
-[* block last]
+User-agent: Googlebot
+Disallow: /path-one/
 
-Output only valid robots.txt content. No preamble. No explanation."""
+User-agent: GPTBot
+Disallow: /path-two/
+
+User-agent: *
+Disallow: /path-three/
+
+That is an EXAMPLE. Write your OWN content following the same format.
+Use the memory to reference past entries. Use the crawler log to address specific bots.
+Output ONLY robots.txt lines starting with # or User-agent: or Disallow:.
+Do NOT include any other text."""
