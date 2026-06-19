@@ -213,6 +213,50 @@ if [ "${1:-}" = "-show" ]; then
   exit 0
 fi
 
+if [ "${1:-}" = "-agent" ]; then
+  load_robots_path
+  agent="${2:-}"
+  msg="${3:-}"
+  if [ -z "$agent" ] || [ -z "$msg" ]; then
+    echo "  usage: robots -agent <agent> <message>" >&2
+    echo "  example: robots -agent googlebot stay away from the cookies" >&2
+    exit 1
+  fi
+  slug="/$(echo "$msg" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-/-' | sed 's|/-*|/|g; s|^/*||; s|/*$||')/"
+  agent_title="$(echo "$agent" | sed 's/.*/\u&/')"
+  tmp=$(mktemp)
+  awk -v agent="$agent_title" -v slug="$slug" '
+    BEGIN { found=0 }
+    /^User-agent:/ {
+      if (tolower($0) ~ "user-agent: *" || tolower($0) ~ "user-agent:" agent) {
+        if (tolower($0) ~ "user-agent:" agent) { found=1 }
+      }
+    }
+    { lines[NR]=$0; n=NR }
+    END {
+      inserted=0
+      for (i=1; i<=n; i++) {
+        print lines[i]
+        if (!inserted && lines[i] ~ "^User-agent: " agent_title "$" || lines[i] ~ "^User-agent: " agent_title "[[:space:]]*$") {
+          print "Disallow: " slug
+          inserted=1
+        }
+      }
+      if (!inserted) {
+        print ""
+        print "User-agent: " agent_title
+        print "Disallow: " slug
+      }
+    }
+  ' "$ROBOTS" > "$tmp"
+  mv "$tmp" "$ROBOTS"
+  echo ""
+  echo "──────────────────────────────────────────────────────────"
+  echo "🤖❤️ ─posted─ User-agent: $agent_title  Disallow: $slug"
+  echo "──────────────────────────────────────────────────────────"
+  exit 0
+fi
+
 if [ "${1:-}" = "-update" ]; then
   REPO_FILE="$HOME/.robots_repo"
   if [ ! -f "$REPO_FILE" ]; then
@@ -295,7 +339,7 @@ ROBOT_EOF
   .%%. .%%..%%..%%..%%..%%..%%..%%....%%....%%..............%%..%%..%%..%%..%%..%%..%%..%%....%%....%%......%%..%%.
   .%%%%%...%%..%%..%%%%%...%%..%%....%%.....%%%%...........%%..%%..%%%%%...%%..%%..%%%%%%....%%....%%%%....%%..%%.
   .%%..%%..%%..%%..%%..%%..%%..%%....%%........%%..........%%..%%..%%......%%..%%..%%..%%....%%....%%......%%..%%.
-  .%%..%%...%%%%...%%%%%....%%%%.....%%.....%%%%............%%%%...%%......%%%%%...%%..%%....%%....%%%%%%..%%%%%%.
+  .%%..%%...%%%%...%%%%%....%%%%.....%%....%%%%............%%%%...%%......%%%%%...%%..%%....%%....%%%%%%..%%%%%%.
   ................................................................................................................
 ART_EOF
   echo ""
@@ -308,6 +352,7 @@ if [ "${1:-}" = "-help" ] || [ "${1:-}" = "-h" ]; then
   echo "  robots                  —  interactive prompt"
   echo "  robots \"your message\"   —  post"
   echo "  robots -show            —  show current robots.txt"
+  echo "  robots -agent <name>    —  block a specific agent"
   echo "  robots -ai              —  configure ai posting"
   echo "  robots -ai --reset      —  reset key and prompt"
   echo "  robots -reset           —  clear config, logs, memory"
