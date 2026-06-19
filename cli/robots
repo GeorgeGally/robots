@@ -327,8 +327,13 @@ ai_setup() {
 
   if [ "$reset_flag" = "--resetprompt" ]; then
     prompt=""
-    echo "  ✓  prompt reset to default"
-    echo ""
+    cat > "$env_file" <<ENVEOF
+OPENROUTER_API_KEY=$key
+PROMPT_TEMPLATE=$prompt
+ENVEOF
+    chmod 600 "$env_file"
+    echo "  ✓  prompt reset to default. key unchanged."
+    return 0
   fi
 
   echo ""
