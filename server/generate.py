@@ -39,9 +39,21 @@ def read_memory():
         return ""
 
     text = path.read_text()
-    entries = text.strip().split("\n---\n")
-    last_30 = entries[-30:]
-    return "\n---\n".join(last_30)
+    lines = text.strip().split("\n")
+    disallows = []
+    in_disallows = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.lower() == "### disallows":
+            in_disallows = True
+            continue
+        if in_disallows:
+            if stripped.startswith("###") or stripped == "---":
+                in_disallows = False
+                continue
+            if stripped.startswith("/"):
+                disallows.append(stripped)
+    return "\n".join(disallows[-20:]) if disallows else ""
 
 
 def call_llm(api_key, user_prompt):
