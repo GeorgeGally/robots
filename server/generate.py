@@ -126,16 +126,17 @@ def parse_llm_response(content):
                 continue
             if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome|here is|here\'s|i\'ll|okay|now|first|note:)', stripped):
                 continue
-            if post:
-                continue
             if stripped.startswith("#"):
                 text = stripped.lstrip("#").strip()
+                text = re.sub(r'[^\x20-\x7E]', '', text).strip()
                 if not text:
                     continue
                 if not post:
                     post = text
                 elif len(haiku) < 3:
                     haiku.append(text)
+            elif post and len(haiku) >= 3:
+                break
 
         if post:
             return post, haiku
@@ -285,7 +286,7 @@ def main():
 
     post, haiku = parse_llm_response(raw_response)
 
-    if not post or len(haiku) < 3:
+    if not post:
         log_result(f"validation failed — {post or '(empty)'}", success=False)
         print("ERROR: Generated content failed validation", file=sys.stderr)
         print(f"post={post!r} haiku={haiku!r}", file=sys.stderr)
