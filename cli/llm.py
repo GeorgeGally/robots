@@ -37,7 +37,7 @@ def call_llm(api_key, prompt):
                     "X-Title": "Robots",
                 },
                 json={
-                    "model": "meta-llama/llama-3.1-8b-instruct:free",
+                    "model": "openrouter/free",
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 300,
                 },

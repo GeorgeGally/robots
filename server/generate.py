@@ -109,7 +109,7 @@ def call_llm(api_key, user_prompt):
                     "X-Title": "Robots",
                 },
                 json={
-                    "model": "meta-llama/llama-3.1-8b-instruct:free",
+                    "model": "openrouter/free",
                     "messages": [
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": user_prompt},
