@@ -35,38 +35,16 @@ def load_env():
 def read_memory():
     path = MEMORY_PATH
     if not path.exists():
-        return ""
+        return []
 
     text = path.read_text()
-    entries = text.strip().split("\n---\n")
+    lines = text.strip().split("\n")
     posts = []
-    for entry in entries[-5:]:
-        post = ""
-        haiku_lines = []
-        in_haiku = False
-        in_post = False
-        for line in entry.strip().split("\n"):
-            stripped = line.strip()
-            if stripped.lower() == "### post":
-                in_post = True
-                in_haiku = False
-                continue
-            if stripped.lower() == "### haiku":
-                in_haiku = True
-                in_post = False
-                continue
-            if stripped.startswith("###"):
-                in_post = False
-                in_haiku = False
-                continue
-            if in_post and stripped:
-                post = stripped
-                in_post = False
-            if in_haiku and stripped:
-                haiku_lines.append(stripped)
-        if post:
-            posts.append(f'"{post}"')
-    return "\n".join(posts) if posts else ""
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("/") and stripped.endswith("/"):
+            posts.append(stripped)
+    return posts[-5:]
 
 
 def call_llm(api_key, user_prompt):
@@ -107,52 +85,17 @@ def call_llm(api_key, user_prompt):
 
 
 def parse_llm_response(content):
-    think_blocks = re.findall(r'<think>(.*?)</think>', content, flags=re.DOTALL)
-    think_blocks += re.findall(r'<thinking>(.*?)</thinking>', content, flags=re.DOTALL)
-    content_clean = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
-    content_clean = re.sub(r'<thinking>.*?</thinking>', '', content_clean, flags=re.DOTALL)
-
-    for source in (content_clean, "\n".join(think_blocks)):
-        if not source.strip():
+    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
+    content = re.sub(r'<thinking>.*?</thinking>', '', content, flags=re.DOTALL)
+    lines = content.strip().split("\n")
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
             continue
-
-        post = ""
-        haiku = []
-        lines = source.strip().split("\n")
-        for line in lines:
-            stripped = line.strip()
-            if not stripped:
-                continue
-            if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome|here is|here\'s|i\'ll|okay|now|first|note:)', stripped):
-                continue
-            if stripped.startswith("#"):
-                text = stripped.lstrip("#").strip()
-                text = re.sub(r'[^\x20-\x7E]', '', text).strip()
-                if not text:
-                    continue
-                if not post:
-                    post = text
-                elif len(haiku) < 3:
-                    haiku.append(text)
-            elif post and len(haiku) >= 3:
-                break
-
-        if post:
-            return post, haiku
-
-        post_match = re.search(r'<post>(.*?)</post>', source, re.DOTALL)
-        if post_match:
-            post = post_match.group(1).strip()
-            haiku_match = re.search(r'<haiku>(.*?)</haiku>', source, re.DOTALL)
-            haiku = []
-            if haiku_match:
-                for line in haiku_match.group(1).strip().split("\n"):
-                    stripped = line.strip()
-                    if stripped:
-                        haiku.append(stripped)
-            return post, haiku[:3]
-
-    return "", []
+        if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome|here is|here\'s|i\'ll|okay|now|first|note:)', stripped):
+            continue
+        return stripped
+    return ""
 
 
 def slugify(text):
@@ -162,16 +105,14 @@ def slugify(text):
     return text
 
 
-def assemble_robots_txt(post, haiku_lines):
+def assemble_robots_txt(post, previous_posts):
     slug = slugify(post)
+    all_posts = previous_posts + [f"/{slug}/"]
+    all_posts = all_posts[-5:]
     lines = []
-    lines.append(f"# {post}")
-    lines.append("#")
-    for h in haiku_lines:
-        lines.append(f"# {h}")
-    lines.append("#")
     lines.append("User-agent: *")
-    lines.append(f"Disallow: /{slug}/")
+    for p in all_posts:
+        lines.append(f"Disallow: {p}")
     return "\n".join(lines)
 
 
@@ -196,15 +137,10 @@ def write_robots_txt(content):
 def append_to_memory(post, haiku, paths, notes=""):
     entry = f"\n## {TODAY}\n\n"
     entry += f"### post\n{post}\n\n"
-    entry += f"### haiku\n"
-    for line in haiku:
-        entry += f"{line}\n"
-    entry += "\n"
     entry += f"### disallows\n"
     for path in paths:
         entry += f"{path}\n"
     entry += "\n"
-    entry += f"### notes\n{notes}\n"
 
     with open(MEMORY_PATH, "a") as f:
         f.write(entry)
@@ -240,11 +176,8 @@ def log_result(post_line, success=True):
 
 def main():
     api_key = load_env()
-    memory = read_memory()
 
-    user_prompt = USER_PROMPT_TEMPLATE.format(
-        memory_contents=memory or "",
-    )
+    user_prompt = USER_PROMPT_TEMPLATE
 
     try:
         raw_response = call_llm(api_key, user_prompt)
@@ -254,12 +187,11 @@ def main():
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    post, haiku = parse_llm_response(raw_response)
+    post = parse_llm_response(raw_response)
 
     if not post:
         log_result(f"validation failed — {post or '(empty)'}", success=False)
         print("ERROR: Generated content failed validation", file=sys.stderr)
-        print(f"post={post!r} haiku={haiku!r}", file=sys.stderr)
         sys.exit(1)
 
     slug = slugify(post)
@@ -267,9 +199,11 @@ def main():
         log_result(f"empty slug from post: {post!r}", success=False)
         print("ERROR: Post text produced an empty slug", file=sys.stderr)
         sys.exit(1)
-    robots_txt = assemble_robots_txt(post, haiku)
+
+    previous = read_memory()
+    robots_txt = assemble_robots_txt(post, previous)
     write_robots_txt(robots_txt)
-    append_to_memory(post, haiku, [f"/{slug}/"])
+    append_to_memory(post, [], [f"/{slug}/"])
     trim_memory()
 
     log_result(post)
