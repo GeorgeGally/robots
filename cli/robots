@@ -171,14 +171,22 @@ ART_EOF
 fi
 
 if [ "${1:-}" = "-reset" ]; then
-  rm -f "$HOME/.robots_ai_env"
+  env_file="$HOME/.robots_ai_env"
+  if [ -f "$env_file" ]; then
+    key=$(grep '^OPENROUTER_API_KEY=' "$env_file" | head -1 | cut -d= -f2-)
+    cat > "$env_file" <<ENVEOF
+OPENROUTER_API_KEY=$key
+PROMPT_TEMPLATE=
+ENVEOF
+    chmod 600 "$env_file"
+  fi
   rm -f "$HOME/.robots-generate.log"
   generate_py=$(find_generate 2>/dev/null) || true
   if [ -n "$generate_py" ]; then
     log_dir=$(dirname "$generate_py")
     rm -f "$log_dir/generate.log" "$log_dir/memory.md"
   fi
-  echo "  ✓  config, logs, and memory cleared."
+  echo "  ✓  logs and memory cleared. api key kept."
   exit 0
 fi
 
