@@ -71,39 +71,39 @@ def read_memory():
 
 
 def call_llm(api_key, user_prompt):
-    for attempt in range(3):
-        try:
-            response = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://github.com/GeorgeGally/robots",
-                    "X-Title": "Robots",
-                },
-                json={
-                    "model": "openrouter/free",
-                    "messages": [
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    "temperature": 0.8,
-                    "max_tokens": 600,
-                },
-                timeout=60,
-            )
-            response.raise_for_status()
-            data = response.json()
-            if "choices" not in data or not data["choices"]:
-                if attempt < 2:
+    models = ["openai/gpt-oss-120b:free", "openrouter/free"]
+    retries = 2
+    for model in models:
+        for attempt in range(retries):
+            try:
+                response = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://github.com/GeorgeGally/robots",
+                        "X-Title": "Robots",
+                    },
+                    json={
+                        "model": model,
+                        "messages": [
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        "temperature": 0.8,
+                        "max_tokens": 600,
+                    },
+                    timeout=60,
+                )
+                response.raise_for_status()
+                data = response.json()
+                if "choices" not in data or not data["choices"]:
                     continue
-                raise RuntimeError(f"LLM returned no choices")
-            message = data["choices"][0]["message"]
-            content = message.get("content") or ""
-            if content and content.strip():
-                return content.strip()
-        except Exception:
-            if attempt == 2:
-                raise
+                message = data["choices"][0]["message"]
+                content = message.get("content") or ""
+                if content and content.strip():
+                    return content.strip()
+            except Exception:
+                pass
     raise RuntimeError("LLM returned empty content")
 
 
@@ -126,11 +126,15 @@ def parse_llm_response(content):
                 continue
             if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome|here is|here\'s|i\'ll|okay|now|first|note:)', stripped):
                 continue
-            if stripped.startswith("# 🤖"):
-                post = stripped.replace("# 🤖", "").strip()
-            elif stripped.startswith("#") and not stripped.startswith("# 🤖") and len(haiku) < 3:
+            if post:
+                continue
+            if stripped.startswith("#"):
                 text = stripped.lstrip("#").strip()
-                if text:
+                if not text:
+                    continue
+                if not post:
+                    post = text
+                elif len(haiku) < 3:
                     haiku.append(text)
 
         if post:
@@ -187,7 +191,7 @@ def generate_paths(post, haiku, count=3):
 
 def assemble_robots_txt(post, haiku_lines, paths):
     lines = []
-    lines.append(f"# 🤖 {post}")
+    lines.append(f"# {post}")
     lines.append("#")
     for h in haiku_lines:
         lines.append(f"# {h}")

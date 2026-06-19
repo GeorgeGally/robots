@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-import os, sys, json, re
-from pathlib import Path
+import os, sys, re
 
 try:
     import requests
@@ -42,43 +41,39 @@ def clean_output(content):
 
 
 def call_llm(api_key, prompt):
-    for attempt in range(3):
-        try:
-            response = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://github.com/GeorgeGally/robots",
-                    "X-Title": "Robots",
-                },
-                json={
-                    "model": "openrouter/free",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 300,
-                },
-                timeout=30,
-            )
-            response.raise_for_status()
-            data = response.json()
-            if "choices" not in data or not data["choices"]:
-                if attempt < 2:
+    models = ["openai/gpt-oss-120b:free", "openrouter/free"]
+    retries = 2
+    for model in models:
+        for attempt in range(retries):
+            try:
+                response = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://github.com/GeorgeGally/robots",
+                        "X-Title": "Robots",
+                    },
+                    json={
+                        "model": model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 300,
+                    },
+                    timeout=30,
+                )
+                response.raise_for_status()
+                data = response.json()
+                if "choices" not in data or not data["choices"]:
                     continue
-                raise RuntimeError(f"LLM returned no choices: {json.dumps(data)}")
-            message = data["choices"][0]["message"]
-            content = message.get("content") or ""
-            if content and content.strip():
-                return clean_output(content)
-            if attempt < 2:
-                continue
-            raise RuntimeError(f"LLM returned empty content: {json.dumps(data)}")
-        except requests.exceptions.HTTPError:
-            if attempt == 2:
-                raise
-        except requests.exceptions.Timeout:
-            if attempt == 2:
-                raise RuntimeError("LLM request timed out after 3 attempts")
-    raise RuntimeError("LLM returned empty content after 3 attempts")
+                message = data["choices"][0]["message"]
+                content = message.get("content") or ""
+                if content and content.strip():
+                    return clean_output(content)
+            except (requests.exceptions.HTTPError, requests.exceptions.Timeout):
+                pass
+            except Exception:
+                pass
+    raise RuntimeError("LLM returned empty content")
 
 
 def main():
