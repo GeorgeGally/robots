@@ -113,8 +113,8 @@ def slugify(text):
 
 def assemble_robots_txt(post, haiku, previous_posts):
     slug = slugify(post)
-    all_posts = previous_posts + [f"/{slug}/"]
-    all_posts = all_posts[-5:]
+    all_posts = [f"/{slug}/"] + previous_posts
+    all_posts = all_posts[:5]
     lines = []
     lines.append("User-agent: robots")
     for p in all_posts:
