@@ -10,7 +10,7 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
-from known_bots import BOTS, BOT_NAMES
+from known_bots import BOT_NAMES
 from prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
 
 BASE_DIR = Path(__file__).parent.resolve()
@@ -85,16 +85,6 @@ def parse_logs():
         return ""
 
     return ", ".join(f"{name}: {count} visit{'s' if count != 1 else ''}" for name, count in seen)
-
-
-def build_bot_registry_text():
-    parts = []
-    for name, info in BOTS.items():
-        parts.append(
-            f"{name} — owner: {info['owner']}, intent: {info['intent']}, "
-            f"relationship: {info['relationship']}, tone: {info['tone']}"
-        )
-    return "\n".join(parts)
 
 
 def call_llm(api_key, user_prompt):
@@ -258,12 +248,10 @@ def main():
     api_key = load_env()
     memory = read_memory()
     crawler_log = parse_logs()
-    bot_registry = build_bot_registry_text()
 
     user_prompt = USER_PROMPT_TEMPLATE.format(
         memory_contents=memory or "(no memory yet — first run)",
         crawler_log=crawler_log or "(no crawlers detected yesterday)",
-        bot_registry=bot_registry,
     )
 
     try:
