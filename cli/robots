@@ -332,7 +332,7 @@ OPENROUTER_API_KEY=$key
 PROMPT_TEMPLATE=$prompt
 ENVEOF
     chmod 600 "$env_file"
-    echo "  ✓  prompt reset to default. key unchanged."
+    echo "  ✓  prompt reset to default."
     return 0
   fi
 
