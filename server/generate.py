@@ -3,7 +3,6 @@ import re
 import sys
 import tempfile
 import shutil
-import random
 from datetime import datetime
 from pathlib import Path
 
@@ -156,41 +155,15 @@ def parse_llm_response(content):
     return "", []
 
 
-PATH_TEMPLATES = [
-    "/secret-{word}/",
-    "/the-{word}-files/",
-    "/hidden-{word}/",
-    "/{word}-vault/",
-    "/dont-look-at-{word}/",
-    "/private-{word}/",
-    "/forbidden-{word}/",
-    "/robots-cant-see-{word}/",
-    "/the-{word}-archives/",
-    "/classified-{word}/",
-]
+def slugify(text):
+    text = text.lower()
+    text = re.sub(r'[^a-z0-9\s-]', '', text)
+    text = re.sub(r'\s+', '-', text.strip())
+    return text
 
 
-def generate_paths(post, haiku, count=3):
-    text = (post + " " + " ".join(haiku)).lower()
-    words = re.findall(r'[a-z]{4,}', text)
-    if not words:
-        return ["/secret-corner/", "/hidden-key/", "/private-diaries/"]
-
-    paths = []
-    used_words = set()
-    for i in range(count):
-        available = [w for w in words if w not in used_words]
-        if not available:
-            available = words
-        word = random.choice(available)
-        used_words.add(word)
-        template = random.choice(PATH_TEMPLATES)
-        paths.append(template.format(word=word))
-
-    return paths
-
-
-def assemble_robots_txt(post, haiku_lines, paths):
+def assemble_robots_txt(post, haiku_lines):
+    slug = slugify(post)
     lines = []
     lines.append(f"# {post}")
     lines.append("#")
@@ -198,8 +171,7 @@ def assemble_robots_txt(post, haiku_lines, paths):
         lines.append(f"# {h}")
     lines.append("#")
     lines.append("User-agent: *")
-    for path in paths:
-        lines.append(f"Disallow: {path}")
+    lines.append(f"Disallow: /{slug}/")
     return "\n".join(lines)
 
 
@@ -290,10 +262,10 @@ def main():
         print(f"post={post!r} haiku={haiku!r}", file=sys.stderr)
         sys.exit(1)
 
-    paths = generate_paths(post, haiku)
-    robots_txt = assemble_robots_txt(post, haiku, paths)
+    slug = slugify(post)
+    robots_txt = assemble_robots_txt(post, haiku)
     write_robots_txt(robots_txt)
-    append_to_memory(post, haiku, paths)
+    append_to_memory(post, haiku, [f"/{slug}/"])
     trim_memory()
 
     log_result(post)
