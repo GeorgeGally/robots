@@ -120,8 +120,16 @@ if [ "${1:-}" = "-setup" ] || [ "${1:-}" = "setup" ]; then
   # if a directory was given, look for robots.txt inside it
   if [ -d "$path" ]; then
     path="${path%/}/robots.txt"
-  fi
-  if [ ! -f "$path" ]; then
+    if [ ! -f "$path" ]; then
+      read -r -p "  $path doesn't exist. create it? [Y/n] " yn
+      if [ "$yn" = "n" ] || [ "$yn" = "N" ]; then
+        echo "  Aborted." >&2
+        exit 1
+      fi
+      touch "$path"
+      echo "  created $path"
+    fi
+  elif [ ! -f "$path" ]; then
     echo "Error: $path not found" >&2
     exit 1
   fi
@@ -162,6 +170,11 @@ if [ "${1:-}" = "-update" ] || [ "${1:-}" = "update" ]; then
     exit 1
   fi
   REPO=$(cat "$REPO_FILE")
+  if [ ! -d "$REPO" ]; then
+    echo "Error: repo not found at $REPO" >&2
+    echo "Re-clone and run install.sh." >&2
+    exit 1
+  fi
   if [ ! -d "$REPO/.git" ]; then
     echo "Error: $REPO is not a git repo. Re-clone and run install.sh." >&2
     exit 1
@@ -451,7 +464,29 @@ ENVEOF
 }
 
 if [ "${1:-}" = "-ai" ] || [ "${1:-}" = "ai" ]; then
-  load_robots_path
+  load_robots_path || {
+    echo ""
+    echo "  robots.txt not configured yet."
+    read -r -p "  where is your robots.txt? (absolute path): " path
+    if [ -z "$path" ]; then
+      echo "  Error: path required." >&2
+      exit 1
+    fi
+    if [ -d "$path" ]; then
+      path="${path%/}/robots.txt"
+    fi
+    if [ ! -f "$path" ]; then
+      read -r -p "  $path doesn't exist. create it? [Y/n] " yn
+      if [ "$yn" = "n" ] || [ "$yn" = "N" ]; then
+        echo "  Aborted." >&2
+        exit 1
+      fi
+      touch "$path"
+      echo "  created $path"
+    fi
+    echo "ROBOTS=$path" > "$CONF"
+    echo "  configured: $path"
+  }
   ai_setup "${2:-}"
   exit 0
 fi
@@ -511,7 +546,8 @@ if [ "${1:-}" = "-generate" ] || [ "${1:-}" = "generate" ]; then
   # fallback to simple generator
   llm=$(find_llm) || { echo "Error: generate.py and llm.py not found" >&2; echo "Run install.sh or clone the repo." >&2; exit 1; }
   result=$(python3 "$llm" 2>/dev/null) || {
-    echo "Generation failed. Run 'robots -ai' to configure." >&2
+    echo "Generation failed. Neither generate.py nor llm.py found." >&2
+    echo "Run install.sh or clone the repo." >&2
     exit 1
   }
   first_line=$(echo "$result" | head -1)
@@ -531,11 +567,19 @@ if [ $# -eq 0 ]; then
     exit 0
   fi
   SLUG="/$(slugify "$input")/"
+  if [ "$SLUG" = "//" ]; then
+    echo "Nothing to post."
+    exit 0
+  fi
   write_post "$ROBOTS" "$SLUG"
   echo "🤖 posted: $SLUG"
   exit 0
 fi
 
 SLUG="/$(slugify "$*")/"
+if [ "$SLUG" = "//" ]; then
+  echo "Nothing to post."
+  exit 0
+fi
 write_post "$ROBOTS" "$SLUG"
 echo "🤖 posted: $SLUG"

@@ -124,7 +124,12 @@ if [ ${#FOUND[@]} -gt 0 ]; then
     idx=$((choice-1))
     "$DEST" -setup "${FOUND[$idx]}"
   else
-    "$DEST" -setup "${choice:-}"
+    if [ -z "$choice" ]; then
+      echo "  Error: no path provided." >&2
+      echo "  Re-run install.sh and enter a path to your robots.txt." >&2
+      exit 1
+    fi
+    "$DEST" -setup "$choice"
   fi
 else
   echo ""
