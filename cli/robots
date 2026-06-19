@@ -222,6 +222,7 @@ if [ "${1:-}" = "-agent" ]; then
     echo "  example: robots -agent googlebot stay away from the cookies" >&2
     exit 1
   fi
+  slug="/$(echo "$msg" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-/-' | sed 's|/-*|/|g; s|^/*||; s|/*$||')/"
   python3 - "$ROBOTS" "$agent" "$msg" <<'PYEOF'
 import sys, re, os, tempfile, shutil
 
