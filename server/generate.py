@@ -116,7 +116,7 @@ def assemble_robots_txt(post, haiku, previous_posts):
     all_posts = previous_posts + [f"/{slug}/"]
     all_posts = all_posts[-5:]
     lines = []
-    lines.append("User-agent: Robots")
+    lines.append("User-agent: robots")
     for p in all_posts:
         lines.append(f"Disallow: {p}")
     lines.append("")
