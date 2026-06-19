@@ -209,6 +209,7 @@ fi
 if [ "${1:-}" = "-show" ]; then
   load_robots_path
   cat "$ROBOTS"
+  echo ""
   exit 0
 fi
 
