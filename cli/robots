@@ -379,7 +379,8 @@ ai_setup() {
   echo "  ── cron ─────────────────────────────────────"
   echo ""
   local robots_path; robots_path=$(command -v robots 2>/dev/null || echo "$0")
-  local cron_line="0 3 * * * ${robots_path} generate >> \$HOME/.robots-generate.log 2>&1"
+  local python_path; python_path=$(command -v python3 2>/dev/null || echo "python3")
+  local cron_line="0 3 * * * PATH=\"/usr/local/bin:/usr/bin:/bin\" ${robots_path} generate >> \$HOME/.robots-generate.log 2>&1"
   local existing_cron; existing_cron=$(crontab -l 2>/dev/null | grep -F "robots generate" || true)
   cron_status=""
   if [ -n "$existing_cron" ]; then
@@ -497,7 +498,7 @@ fi
 if [ "${1:-}" = "-cron" ] || [ "${1:-}" = "cron" ]; then
   echo ""
   robots_path=$(command -v robots 2>/dev/null || echo "$0")
-  cron_line="0 3 * * * ${robots_path} generate >> \$HOME/.robots-generate.log 2>&1"
+  cron_line="0 3 * * * PATH=\"/usr/local/bin:/usr/bin:/bin\" ${robots_path} generate >> \$HOME/.robots-generate.log 2>&1"
   existing_cron=$(crontab -l 2>/dev/null | grep -F "robots generate" || true)
   if [ -n "$existing_cron" ]; then
     echo "  cron: already installed"
@@ -543,14 +544,13 @@ if [ "${1:-}" = "-generate" ] || [ "${1:-}" = "generate" ]; then
         break
       fi
     done
-    python3 "$generate_py"
+    python3 "$generate_py" 2>>"$HOME/.robots-generate.log"
     exit $?
   fi
   # fallback to simple generator
   llm=$(find_llm) || { echo "Error: generate.py and llm.py not found" >&2; echo "Run install.sh or clone the repo." >&2; exit 1; }
-  result=$(python3 "$llm" 2>/dev/null) || {
-    echo "Generation failed. Neither generate.py nor llm.py found." >&2
-    echo "Run install.sh or clone the repo." >&2
+  result=$(python3 "$llm" 2>>"$HOME/.robots-generate.log") || {
+    echo "Generation failed. Check $HOME/.robots-generate.log for details." >&2
     exit 1
   }
   first_line=$(echo "$result" | head -1)
