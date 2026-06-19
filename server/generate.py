@@ -87,15 +87,21 @@ def call_llm(api_key, user_prompt):
 def parse_llm_response(content):
     content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
     content = re.sub(r'<thinking>.*?</thinking>', '', content, flags=re.DOTALL)
-    lines = content.strip().split("\n")
-    for line in lines:
+    post = ""
+    haiku = []
+    for line in content.strip().split("\n"):
         stripped = line.strip()
-        if not stripped:
-            continue
-        if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome|here is|here\'s|i\'ll|okay|now|first|note:)', stripped):
-            continue
-        return stripped
-    return ""
+        if stripped.upper().startswith("POST:"):
+            post = stripped.split(":", 1)[1].strip()
+        elif stripped.upper().startswith("HAIKU:"):
+            haiku.append(stripped.split(":", 1)[1].strip())
+    if not post:
+        for line in content.strip().split("\n"):
+            stripped = line.strip()
+            if stripped and not re.match(r'(?i)^(?:let me|i need|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome|here|okay|now|first|note:)', stripped):
+                post = stripped
+                break
+    return post, haiku[:3]
 
 
 def slugify(text):
@@ -105,14 +111,21 @@ def slugify(text):
     return text
 
 
-def assemble_robots_txt(post, previous_posts):
+def assemble_robots_txt(post, haiku, previous_posts):
     slug = slugify(post)
     all_posts = previous_posts + [f"/{slug}/"]
     all_posts = all_posts[-5:]
     lines = []
-    lines.append("User-agent: *")
+    lines.append("User-agent: Robots")
     for p in all_posts:
         lines.append(f"Disallow: {p}")
+    lines.append("")
+    lines.append("User-agent: *")
+    lines.append("Disallow: /")
+    if haiku:
+        lines.append("")
+        for h in haiku:
+            lines.append(f"# {h}")
     return "\n".join(lines)
 
 
@@ -187,7 +200,7 @@ def main():
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    post = parse_llm_response(raw_response)
+    post, haiku = parse_llm_response(raw_response)
 
     if not post:
         log_result(f"validation failed — {post or '(empty)'}", success=False)
@@ -201,7 +214,7 @@ def main():
         sys.exit(1)
 
     previous = read_memory()
-    robots_txt = assemble_robots_txt(post, previous)
+    robots_txt = assemble_robots_txt(post, haiku, previous)
     write_robots_txt(robots_txt)
     append_to_memory(post, [], [f"/{slug}/"])
     trim_memory()
