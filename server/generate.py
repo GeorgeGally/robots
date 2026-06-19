@@ -109,7 +109,7 @@ def call_llm(api_key, user_prompt):
                     "X-Title": "Robots",
                 },
                 json={
-                    "model": "openrouter/free",
+                    "model": "meta-llama/llama-3.1-8b-instruct:free",
                     "messages": [
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": user_prompt},
@@ -126,13 +126,33 @@ def call_llm(api_key, user_prompt):
                     continue
                 raise RuntimeError(f"LLM returned no choices")
             message = data["choices"][0]["message"]
-            content = message.get("content") or message.get("reasoning") or ""
+            content = message.get("content") or ""
             if content and content.strip():
-                return content.strip()
+                return extract_robots_txt(content.strip())
         except Exception:
             if attempt == 2:
                 raise
     raise RuntimeError("LLM returned empty content")
+
+
+def extract_robots_txt(content):
+    import re
+    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
+    content = re.sub(r'<thinking>.*?</thinking>', '', content, flags=re.DOTALL)
+    lines = content.strip().split("\n")
+    robots_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            if robots_lines:
+                robots_lines.append("")
+            continue
+        if (stripped.startswith("#") or
+            stripped.lower().startswith("user-agent:") or
+            stripped.lower().startswith("disallow:")):
+            robots_lines.append(stripped)
+    result = "\n".join(robots_lines).strip()
+    return result if result else content
 
 
 def validate_output(content):
