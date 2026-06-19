@@ -299,7 +299,7 @@ def main():
     trim_memory()
 
     log_result(post)
-    print(f"OK | {TODAY} | {post}")
+    print(f"OK | {post}")
 
 
 if __name__ == "__main__":
