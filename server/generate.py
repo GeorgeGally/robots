@@ -28,25 +28,7 @@ def load_env():
     load_dotenv(ENV_PATH)
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
-        if os.isatty(0):
-            print("  OPENROUTER_API_KEY not configured.")
-            print("  Get one at: https://openrouter.ai/keys")
-            key = input("  API key: ").strip()
-            if not key:
-                raise SystemExit("No key entered. Aborting.")
-            env_path = Path(ENV_PATH)
-            env_path.parent.mkdir(parents=True, exist_ok=True)
-            existing = env_path.read_text() if env_path.exists() else ""
-            if "OPENROUTER_API_KEY=" in existing:
-                env_path.write_text(re.sub(r'OPENROUTER_API_KEY=.*', f'OPENROUTER_API_KEY={key}', existing))
-            else:
-                with open(env_path, "a") as f:
-                    f.write(f"OPENROUTER_API_KEY={key}\n")
-            os.chmod(str(env_path), 0o600)
-            load_dotenv(ENV_PATH, override=True)
-            api_key = os.environ.get("OPENROUTER_API_KEY")
-        else:
-            raise SystemExit("OPENROUTER_API_KEY not found in config")
+        raise SystemExit("OPENROUTER_API_KEY not found in config")
     return api_key
 
 

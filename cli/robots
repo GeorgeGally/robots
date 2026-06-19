@@ -602,6 +602,26 @@ fi
 
 if [ "${1:-}" = "-generate" ]; then
   load_robots_path
+  env_file="$HOME/.robots_ai_env"
+  if [ -f "$env_file" ]; then
+    api_key=$(grep '^OPENROUTER_API_KEY=' "$env_file" | head -1 | cut -d= -f2-)
+  else
+    api_key=""
+  fi
+  if [ -z "$api_key" ]; then
+    echo "  OPENROUTER_API_KEY not configured."
+    echo "  Get one at: https://openrouter.ai/keys"
+    read -r -p "  API key: " api_key
+    if [ -z "$api_key" ]; then
+      echo "  No key entered. Aborting." >&2
+      exit 1
+    fi
+    mkdir -p "$(dirname "$env_file")"
+    echo "OPENROUTER_API_KEY=$api_key" > "$env_file"
+    chmod 600 "$env_file"
+    echo "  ✓  saved."
+    echo ""
+  fi
   generate_py=$(find_generate) || true
   if [ -n "$generate_py" ]; then
     export ROBOTS_TXT="$ROBOTS"
