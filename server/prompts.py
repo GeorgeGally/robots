@@ -6,6 +6,8 @@ Recent outputs:
 {memory_contents}
 
 Write one line. Write a haiku. Output in this exact format:
-<post></post>
+<post>your one line here</post>
 <haiku>
+your haiku
+goes here
 </haiku>"""
