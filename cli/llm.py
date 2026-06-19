@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sys, json
+import os, sys, json, re
 from pathlib import Path
 
 try:
@@ -23,6 +23,22 @@ def read_config():
     except FileNotFoundError:
         pass
     return config
+
+
+def clean_output(content):
+    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
+    content = re.sub(r'<thinking>.*?</thinking>', '', content, flags=re.DOTALL)
+    lines = content.strip().split("\n")
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if re.match(r'(?i)^(?:let me|i need to|i should|the task|from the last|current|i have \d|actually|or more|let\'s)', stripped):
+            continue
+        if stripped.startswith("#") or stripped.lower().startswith("disallow:"):
+            return stripped
+    first = content.strip().split("\n")[0].strip()
+    return first
 
 
 def call_llm(api_key, prompt):
@@ -50,10 +66,9 @@ def call_llm(api_key, prompt):
                     continue
                 raise RuntimeError(f"LLM returned no choices: {json.dumps(data)}")
             message = data["choices"][0]["message"]
-            content = message.get("content") or message.get("reasoning") or ""
+            content = message.get("content") or ""
             if content and content.strip():
-                line = content.strip().split("\n")[0].strip()
-                return line
+                return clean_output(content)
             if attempt < 2:
                 continue
             raise RuntimeError(f"LLM returned empty content: {json.dumps(data)}")
