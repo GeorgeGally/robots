@@ -190,7 +190,9 @@ def log_result(post_line, success=True):
 def main():
     api_key = load_env()
 
-    user_prompt = USER_PROMPT_TEMPLATE
+    previous = read_memory()
+    previous_text = "\n".join(previous) if previous else "(none yet)"
+    user_prompt = USER_PROMPT_TEMPLATE.format(previous_paths=previous_text)
 
     try:
         raw_response = call_llm(api_key, user_prompt)
