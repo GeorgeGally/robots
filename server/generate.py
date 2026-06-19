@@ -4,19 +4,16 @@ import sys
 import json
 import tempfile
 import shutil
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
-
-from known_bots import BOT_NAMES
 from prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
 
 BASE_DIR = Path(__file__).parent.resolve()
 
 ENV_PATH = os.environ.get("ROBOTS_ENV", str(Path.home() / ".robots_ai_env"))
-LOG_PATH = os.environ.get("ROBOTS_LOG", "")
 _robots_txt = os.environ.get("ROBOTS_TXT", "")
 if _robots_txt:
     SITE_ROOT = str(Path(_robots_txt).resolve().parent)
@@ -26,7 +23,6 @@ else:
 MEMORY_PATH = BASE_DIR / "memory.md"
 GENERATE_LOG = BASE_DIR / "generate.log"
 TODAY = datetime.now().strftime("%Y-%m-%d")
-YESTERDAY = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
 def load_env():
@@ -46,45 +42,6 @@ def read_memory():
     entries = text.strip().split("\n---\n")
     last_30 = entries[-30:]
     return "\n---\n".join(last_30)
-
-
-KNOWN_USER_AGENTS = {
-    "GPTBot": "GPTBot",
-    "CCBot": "CCBot",
-    "archive.org_bot": "archive.org",
-    "Googlebot": "Googlebot",
-    "ClaudeBot": "ClaudeBot",
-    "Bingbot": "bingbot",
-}
-
-
-def parse_logs():
-    if not LOG_PATH:
-        return ""
-    log_file = Path(LOG_PATH)
-    if not log_file.exists():
-        return ""
-
-    yesterday_str = YESTERDAY
-    counts = {name: 0 for name in BOT_NAMES}
-
-    try:
-        text = log_file.read_text(errors="replace")
-    except Exception:
-        return ""
-
-    for line in text.split("\n"):
-        if yesterday_str not in line:
-            continue
-        for name, agent in KNOWN_USER_AGENTS.items():
-            if agent.lower() in line.lower():
-                counts[name] = counts.get(name, 0) + 1
-
-    seen = [(name, count) for name, count in counts.items() if count > 0]
-    if not seen:
-        return ""
-
-    return ", ".join(f"{name}: {count} visit{'s' if count != 1 else ''}" for name, count in seen)
 
 
 def call_llm(api_key, user_prompt):
@@ -247,11 +204,9 @@ def log_result(crawlers_seen, bar_line, success=True):
 def main():
     api_key = load_env()
     memory = read_memory()
-    crawler_log = parse_logs()
 
     user_prompt = USER_PROMPT_TEMPLATE.format(
         memory_contents=memory or "(no memory yet — first run)",
-        crawler_log=crawler_log or "(no crawlers detected yesterday)",
     )
 
     try:
