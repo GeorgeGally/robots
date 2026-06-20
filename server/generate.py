@@ -111,7 +111,7 @@ def slugify(text):
     return text
 
 
-def update_robots_txt(post, haiku, previous_posts):
+def update_robots_txt(post, haiku):
     slug = slugify(post)
     robots_path = Path(SITE_ROOT) / "robots.txt"
     robots_path.parent.mkdir(parents=True, exist_ok=True)
@@ -121,7 +121,15 @@ def update_robots_txt(post, haiku, previous_posts):
     else:
         content = ""
 
-    all_posts = [f"/{slug}/"] + previous_posts
+    existing = []
+    match = re.search(r'(?im)^User-agent:\s*Robots\n((?:Disallow:[^\n]*\n)*)', content)
+    if match:
+        for line in match.group(1).strip().split('\n'):
+            m = re.match(r'(?i)Disallow:\s*(.*)', line.strip())
+            if m:
+                existing.append(m.group(1).strip())
+
+    all_posts = [f"/{slug}/"] + existing
     all_posts = all_posts[:10]
 
     new_block = "User-agent: robots\n" + "\n".join(f"Disallow: {p}" for p in all_posts) + "\n"
@@ -219,8 +227,7 @@ def main():
         print("ERROR: Post text produced an empty slug", file=sys.stderr)
         sys.exit(1)
 
-    previous = read_memory()
-    update_robots_txt(post, haiku, previous)
+    update_robots_txt(post, haiku)
     append_to_memory(post, [], [f"/{slug}/"])
     trim_memory()
 
