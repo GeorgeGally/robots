@@ -94,9 +94,9 @@ if match:
         m = re.match(r'(?i)Disallow:\s*(.*)', line.strip())
         if m:
             existing.append(m.group(1).strip())
-# prepend new disallow, cap at 8 newest
+# prepend new disallow, cap at 10 newest
 all_paths = [new_disallow] + existing
-all_paths = all_paths[:8]
+all_paths = all_paths[:10]
 # remove existing Robots block
 content = re.sub(r'(?i)User-agent:\s*Robots\n(?:Disallow:[^\n]*\n)*\n?', '', content)
 # build and prepend new block
@@ -250,16 +250,21 @@ while i < len(lines):
             disallows.append(lines[i].strip())
             i += 1
         disallows.insert(0, f"Disallow: {slug}")
-        for d in disallows[:5]:
+        for d in disallows[:10]:
             new_lines.append(d)
     else:
         new_lines.append(line)
         i += 1
 
 if not found:
-    new_lines.append("")
-    new_lines.append(f"User-agent: {agent}")
-    new_lines.append(f"Disallow: {slug}")
+    for idx, line in enumerate(new_lines):
+        if re.match(r'^User-agent:\s*\*\s*$', line, re.I):
+            new_lines[idx:idx] = ["", f"User-agent: {agent}", f"Disallow: {slug}"]
+            break
+    else:
+        new_lines.append("")
+        new_lines.append(f"User-agent: {agent}")
+        new_lines.append(f"Disallow: {slug}")
 
 result = "\n".join(new_lines).strip() + "\n"
 fd, tmp = tempfile.mkstemp(dir=os.path.dirname(robots_path))
