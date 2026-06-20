@@ -216,7 +216,8 @@ fi
 if [ "${1:-}" = "-agent" ]; then
   load_robots_path
   agent="${2:-}"
-  msg="${3:-}"
+  shift 2
+  msg="$*"
   if [ -z "$agent" ] || [ -z "$msg" ]; then
     echo "  usage: robots -agent <agent> <message>" >&2
     echo "  example: robots -agent googlebot stay away from the cookies" >&2
