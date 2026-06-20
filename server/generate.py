@@ -44,7 +44,7 @@ def read_memory():
         stripped = line.strip()
         if stripped.startswith("/") and stripped.endswith("/"):
             posts.append(stripped)
-    return posts[-5:]
+    return posts[-10:]
 
 
 def call_llm(api_key, user_prompt):
@@ -111,33 +111,37 @@ def slugify(text):
     return text
 
 
-def assemble_robots_txt(post, haiku, previous_posts):
+def update_robots_txt(post, haiku, previous_posts):
     slug = slugify(post)
-    all_posts = [f"/{slug}/"] + previous_posts
-    all_posts = all_posts[:5]
-    lines = []
-    lines.append("User-agent: robots")
-    for p in all_posts:
-        lines.append(f"Disallow: {p}")
-    lines.append("")
-    lines.append("User-agent: *")
-    lines.append("Disallow: /")
-    if haiku:
-        lines.append("")
-        for h in haiku:
-            lines.append(f"# {h}")
-    return "\n".join(lines)
-
-
-
-def write_robots_txt(content):
     robots_path = Path(SITE_ROOT) / "robots.txt"
     robots_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if robots_path.exists():
+        content = robots_path.read_text()
+    else:
+        content = ""
+
+    all_posts = [f"/{slug}/"] + previous_posts
+    all_posts = all_posts[:10]
+
+    new_block = "User-agent: robots\n" + "\n".join(f"Disallow: {p}" for p in all_posts) + "\n"
+
+    if content.strip():
+        content_cleaned = re.sub(
+            r'(?im)^User-agent:\s*Robots\n(?:Disallow:[^\n]*\n)*\n?',
+            '', content
+        ).lstrip('\n')
+        result = new_block + "\n" + content_cleaned
+    else:
+        result = new_block + "\nUser-agent: *\nDisallow: /\n"
+
+    if haiku:
+        result += "\n" + "\n".join(f"# {h}" for h in haiku) + "\n"
 
     fd, tmp_path = tempfile.mkstemp(dir=robots_path.parent, prefix="robots.tmp.")
     try:
         with os.fdopen(fd, "w") as f:
-            f.write(content)
+            f.write(result)
         os.chmod(tmp_path, 0o644)
         shutil.move(tmp_path, robots_path)
     except Exception:
@@ -216,8 +220,7 @@ def main():
         sys.exit(1)
 
     previous = read_memory()
-    robots_txt = assemble_robots_txt(post, haiku, previous)
-    write_robots_txt(robots_txt)
+    update_robots_txt(post, haiku, previous)
     append_to_memory(post, [], [f"/{slug}/"])
     trim_memory()
 
