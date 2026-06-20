@@ -146,6 +146,8 @@ def update_robots_txt(post, haiku):
     if haiku:
         result += "\n" + "\n".join(f"# {h}" for h in haiku) + "\n"
 
+    result = re.sub(r'\n(?!\n)(?=User-agent:\s*\*)', '\n\n', result)
+
     fd, tmp_path = tempfile.mkstemp(dir=robots_path.parent, prefix="robots.tmp.")
     try:
         with os.fdopen(fd, "w") as f:
