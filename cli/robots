@@ -103,7 +103,7 @@ all_paths = all_paths[:10]
 # remove existing Robots block
 content = re.sub(r'(?i)User-agent:\s*Robots\n(?:Disallow:[^\n]*\n)*\n?', '', content)
 # build and prepend new block
-block = 'User-agent: Robots\n' + ''.join(f'Disallow: {p}\n' for p in all_paths) + '\n'
+block = 'User-agent: robots\n' + ''.join(f'Disallow: {p}\n' for p in all_paths) + '\n'
 content = block + content.lstrip('\n')
 # atomic write
 fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path))

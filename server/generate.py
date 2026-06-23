@@ -134,7 +134,7 @@ def update_robots_txt(post, haiku):
     all_posts = [f"/{slug}/"] + existing
     all_posts = all_posts[:10]
 
-    new_block = "User-agent: Robots\n" + "\n".join(f"Disallow: {p}" for p in all_posts) + "\n"
+    new_block = "User-agent: robots\n" + "\n".join(f"Disallow: {p}" for p in all_posts) + "\n"
 
     if content.strip():
         content_cleaned = re.sub(
