@@ -30,6 +30,10 @@ async function setPersistentDismissed(origins) {
 
 async function init() {
   const tab = await getCurrentTab()
+  if (!tab) {
+    document.getElementById('comments').textContent = 'Could not determine origin.'
+    return
+  }
   const origin = getOrigin(tab.url)
   if (!origin) {
     document.getElementById('comments').textContent = 'Could not determine origin.'
@@ -72,6 +76,7 @@ async function init() {
     })
   } else {
     btn.addEventListener('click', async () => {
+      if (persistent.includes(origin)) return
       persistent.push(origin)
       await setPersistentDismissed(persistent)
       btn.textContent = 'Unhide bar on this site'

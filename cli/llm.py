@@ -13,7 +13,7 @@ CONFIG_PATH = os.environ.get("ROBOTS_AI_ENV", os.path.expanduser("~/.robots_ai_e
 def read_config():
     config = {}
     try:
-        with open(CONFIG_PATH) as f:
+        with open(CONFIG_PATH, encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
                 if "=" in line and not line.startswith("#"):

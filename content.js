@@ -91,7 +91,6 @@
       const blob = new Blob([rawText], { type: 'text/plain' })
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank')
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
     })
     link.addEventListener('mouseenter', () => { link.style.color = '#fff' })
     link.addEventListener('mouseleave', () => { link.style.color = '#666' })
@@ -111,6 +110,7 @@
       e.stopPropagation()
       SESSION_DISMISSED.add(origin)
       clearTimeout(timer)
+      if (bar._observer) bar._observer.disconnect()
       if (bar.spacer) bar.spacer.remove()
       bar.remove()
     })
@@ -179,11 +179,13 @@
   function defendBar(bar) {
     const observer = new MutationObserver(() => {
       if (!isAttached(bar) && document.body) {
+        if (SESSION_DISMISSED.has(origin)) { observer.disconnect(); return }
         document.body.insertBefore(bar.spacer, document.body.firstChild)
         document.body.insertBefore(bar, bar.spacer)
       }
     })
     observer.observe(document.body, { childList: true })
+    bar._observer = observer
   }
 
   async function init() {

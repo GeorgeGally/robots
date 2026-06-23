@@ -37,7 +37,7 @@ def read_memory():
     if not path.exists():
         return []
 
-    text = path.read_text()
+    text = path.read_text(encoding='utf-8')
     lines = text.strip().split("\n")
     posts = []
     for line in lines:
@@ -108,6 +108,8 @@ def slugify(text):
     text = text.lower()
     text = re.sub(r'[^a-z0-9\s-]', '', text)
     text = re.sub(r'\s+', '-', text.strip())
+    text = re.sub(r'-+', '-', text)
+    text = text.strip('-')
     return text
 
 
@@ -117,7 +119,7 @@ def update_robots_txt(post, haiku):
     robots_path.parent.mkdir(parents=True, exist_ok=True)
 
     if robots_path.exists():
-        content = robots_path.read_text()
+        content = robots_path.read_text(encoding='utf-8')
     else:
         content = ""
 
@@ -132,7 +134,7 @@ def update_robots_txt(post, haiku):
     all_posts = [f"/{slug}/"] + existing
     all_posts = all_posts[:10]
 
-    new_block = "User-agent: robots\n" + "\n".join(f"Disallow: {p}" for p in all_posts) + "\n"
+    new_block = "User-agent: Robots\n" + "\n".join(f"Disallow: {p}" for p in all_posts) + "\n"
 
     if content.strip():
         content_cleaned = re.sub(
@@ -150,7 +152,7 @@ def update_robots_txt(post, haiku):
 
     fd, tmp_path = tempfile.mkstemp(dir=robots_path.parent, prefix="robots.tmp.")
     try:
-        with os.fdopen(fd, "w") as f:
+        with os.fdopen(fd, "w", encoding='utf-8') as f:
             f.write(result)
         os.chmod(tmp_path, 0o644)
         shutil.move(tmp_path, robots_path)
@@ -169,7 +171,7 @@ def append_to_memory(post, haiku, paths, notes=""):
         entry += f"{path}\n"
     entry += "\n"
 
-    with open(MEMORY_PATH, "a") as f:
+    with open(MEMORY_PATH, "a", encoding='utf-8') as f:
         f.write(entry)
         f.write("\n---\n")
 
@@ -178,13 +180,13 @@ def trim_memory(max_entries=90):
     if not MEMORY_PATH.exists():
         return
 
-    text = MEMORY_PATH.read_text()
+    text = MEMORY_PATH.read_text(encoding='utf-8')
     entries = text.strip().split("\n---\n")
     if len(entries) <= max_entries:
         return
 
     kept = entries[-max_entries:]
-    MEMORY_PATH.write_text("\n---\n".join(kept) + "\n")
+    MEMORY_PATH.write_text("\n---\n".join(kept) + "\n", encoding='utf-8')
 
 
 def log_result(post_line, success=True):
@@ -192,7 +194,7 @@ def log_result(post_line, success=True):
     status = "OK" if success else "FAIL"
     line = f"[{timestamp}] {status} | post: {post_line}\n"
 
-    with open(GENERATE_LOG, "a") as f:
+    with open(GENERATE_LOG, "a", encoding='utf-8') as f:
         f.write(line)
 
     if GENERATE_LOG.exists() and GENERATE_LOG.stat().st_size > 1024 * 1024:
