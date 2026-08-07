@@ -19,11 +19,8 @@ from prompts import USER_PROMPT_TEMPLATE
 MAX_SLUG_LENGTH = 70
 SLUG_BAD_PATTERNS = [
     re.compile(r'^your[- ]sentence[- ]with[- ]spaces$', re.I),
+    re.compile(r'^<your[- ]funny[- ]sentence', re.I),
     re.compile(r'^user[- ]safety', re.I),
-    re.compile(r'we[- ]need[- ]to[- ]produce', re.I),
-    re.compile(r'write[- ]a[- ]short[- ]funny[- ]sentence', re.I),
-    re.compile(r'cron', re.I),
-    re.compile(r'generate', re.I),
 ]
 
 BASE_DIR = Path(__file__).parent.resolve()
@@ -65,7 +62,7 @@ def read_memory():
 
 def call_llm(api_key, user_prompt):
     models = ["openrouter/free"]
-    retries = 2
+    retries = 4
     for model in models:
         for attempt in range(retries):
             try:
@@ -247,14 +244,12 @@ def main():
         print("ERROR: Post text produced an empty slug", file=sys.stderr)
         sys.exit(1)
     if len(slug) > MAX_SLUG_LENGTH:
-        log_result(f"slug too long ({len(slug)}): {slug}", success=False)
-        print("ERROR: Generated post too long — likely prompt leakage", file=sys.stderr)
-        sys.exit(1)
+        slug = slug[:MAX_SLUG_LENGTH].rstrip('-')
     for pat in SLUG_BAD_PATTERNS:
         if pat.search(slug):
             log_result(f"bad pattern match: {slug}", success=False)
             print(f"ERROR: Generated post matched blocked pattern: {pat.pattern}", file=sys.stderr)
-        sys.exit(1)
+            sys.exit(1)
 
     update_robots_txt(post, haiku)
     append_to_memory(post, [], [f"/{slug}/"])

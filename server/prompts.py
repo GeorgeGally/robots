@@ -7,8 +7,8 @@ Recently used paths (don't reuse):
 
 And write a 3-line haiku about it.
 
-Output exactly this format:
-POST: your sentence with spaces
-HAIKU: line 1
-HAIKU: line 2
-HAIKU: line 3"""
+Respond with:
+POST: <your funny sentence here in plain english with spaces>
+HAIKU: <line 1>
+HAIKU: <line 2>
+HAIKU: <line 3>"""
