@@ -41,7 +41,7 @@ def clean_output(content):
 
 
 def call_llm(api_key, prompt):
-    models = ["google/gemini-2.0-flash-exp:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]
+    models = ["openrouter/free"]
     retries = 2
     for model in models:
         for attempt in range(retries):
@@ -69,10 +69,10 @@ def call_llm(api_key, prompt):
                 content = message.get("content") or ""
                 if content and content.strip():
                     return clean_output(content)
-            except (requests.exceptions.HTTPError, requests.exceptions.Timeout):
-                pass
-            except Exception:
-                pass
+            except (requests.exceptions.HTTPError, requests.exceptions.Timeout) as e:
+                print(f"  model {model} attempt {attempt+1}: {e}", file=sys.stderr)
+            except Exception as e:
+                print(f"  model {model} attempt {attempt+1}: {e}", file=sys.stderr)
     raise RuntimeError("LLM returned empty content")
 
 

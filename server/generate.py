@@ -64,7 +64,7 @@ def read_memory():
 
 
 def call_llm(api_key, user_prompt):
-    models = ["google/gemini-2.0-flash-exp:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]
+    models = ["openrouter/free"]
     retries = 2
     for model in models:
         for attempt in range(retries):
@@ -95,8 +95,8 @@ def call_llm(api_key, user_prompt):
                 content = message.get("content") or ""
                 if content and content.strip():
                     return content.strip()
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"  model {model} attempt {attempt+1}: {e}", file=sys.stderr)
     raise RuntimeError("LLM returned empty content")
 
 
