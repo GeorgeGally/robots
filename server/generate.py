@@ -122,17 +122,17 @@ def parse_llm_response(content):
     haiku = []
     for line in content.strip().split("\n"):
         stripped = line.strip()
-        if stripped.upper().startswith("POST:"):
-            post = stripped.split(":", 1)[1].strip()
-        elif stripped.upper().startswith("HAIKU:"):
-            haiku.append(stripped.split(":", 1)[1].strip())
-    if not post:
-        for line in content.strip().split("\n"):
-            stripped = line.strip()
-            if stripped and not re.match(r'(?i)^(?:let me|i need|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome|here|okay|now|first|note:)', stripped):
-                post = stripped
-                break
-    return post, haiku[:3]
+        if not stripped:
+            continue
+        if re.match(r'(?i)^(?:let me|i need|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome|here|okay|now|first|note:|sure|certainly|\bsentence\b)', stripped):
+            continue
+        if stripped.startswith("#") or stripped.startswith("<"):
+            continue
+        if len(stripped) > 200:
+            continue
+        post = stripped
+        break
+    return post, haiku
 
 
 def slugify(text):
