@@ -23,6 +23,24 @@ SLUG_BAD_PATTERNS = [
     re.compile(r'^user[- ]safety', re.I),
 ]
 
+def is_prompt_leak(post):
+    """Reject posts that regurgitate the prompt instructions."""
+    word_count = len(post.split())
+    if word_count > 20:
+        return True
+    leak_patterns = [
+        r'we need to',
+        r'must not (?:mention|reuse)',
+        r'personal pronoun',
+        r'cannot reuse',
+        r'short funny sentence',
+        r'no prefix',
+        r'<your',
+        r':free',
+    ]
+    lower = post.lower()
+    return any(re.search(p, lower) for p in leak_patterns)
+
 BASE_DIR = Path(__file__).parent.resolve()
 
 ENV_PATH = os.environ.get("ROBOTS_ENV", str(Path.home() / ".robots_ai_env"))
@@ -223,40 +241,44 @@ def main():
     previous_text = "\n".join(previous) if previous else "(none yet)"
     user_prompt = USER_PROMPT_TEMPLATE.format(previous_paths=previous_text)
 
-    try:
-        raw_response = call_llm(api_key, user_prompt)
-    except Exception as e:
-        post_line = f"LLM call failed: {e}"
-        log_result(post_line, success=False)
-        print(f"ERROR: {e}", file=sys.stderr)
-        sys.exit(1)
+    for _ in range(5):
+        try:
+            raw_response = call_llm(api_key, user_prompt)
+        except Exception as e:
+            continue
 
-    post, haiku = parse_llm_response(raw_response)
+        post, haiku = parse_llm_response(raw_response)
 
-    if not post:
-        log_result(f"validation failed — {post or '(empty)'}", success=False)
-        print("ERROR: Generated content failed validation", file=sys.stderr)
-        sys.exit(1)
+        if not post:
+            continue
 
-    slug = slugify(post)
-    if not slug:
-        log_result(f"empty slug from post: {post!r}", success=False)
-        print("ERROR: Post text produced an empty slug", file=sys.stderr)
-        sys.exit(1)
-    if len(slug) > MAX_SLUG_LENGTH:
-        slug = slug[:MAX_SLUG_LENGTH].rstrip('-')
-    for pat in SLUG_BAD_PATTERNS:
-        if pat.search(slug):
-            log_result(f"bad pattern match: {slug}", success=False)
-            print(f"ERROR: Generated post matched blocked pattern: {pat.pattern}", file=sys.stderr)
-            sys.exit(1)
+        if is_prompt_leak(post):
+            continue
 
-    update_robots_txt(post, haiku)
-    append_to_memory(post, [], [f"/{slug}/"])
-    trim_memory()
+        slug = slugify(post)
+        if not slug:
+            continue
+        if len(slug) > MAX_SLUG_LENGTH:
+            slug = slug[:MAX_SLUG_LENGTH].rstrip('-')
+        rejected = False
+        for pat in SLUG_BAD_PATTERNS:
+            if pat.search(slug):
+                rejected = True
+                break
+        if rejected:
+            continue
 
-    log_result(post)
-    print(f"🤖 {post}")
+        update_robots_txt(post, haiku)
+        append_to_memory(post, [], [f"/{slug}/"])
+        trim_memory()
+
+        log_result(post)
+        print(f"🤖 {post}")
+        return
+
+    log_result("all attempts failed", success=False)
+    print("ERROR: All generation attempts failed", file=sys.stderr)
+    sys.exit(1)
 
 
 if __name__ == "__main__":
