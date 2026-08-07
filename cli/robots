@@ -769,6 +769,13 @@ if [ "${1:-}" = "-generate" ]; then
   exit 0
 fi
 
+if [ "${1:-}" = "generate" ]; then
+  if [ "$#" -eq 1 ]; then
+    exec "$0" -generate
+  fi
+  shift
+fi
+
 load_robots_path
 
 if [ $# -eq 0 ]; then
