@@ -7,7 +7,13 @@ from datetime import datetime
 from pathlib import Path
 
 import requests
-from dotenv import load_dotenv
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    def load_dotenv(path):
+        pass
+
 from prompts import USER_PROMPT_TEMPLATE
 
 BASE_DIR = Path(__file__).parent.resolve()
