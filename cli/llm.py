@@ -41,7 +41,7 @@ def clean_output(content):
 
 
 def call_llm(api_key, prompt):
-    models = ["openai/gpt-oss-120b:free", "openrouter/free"]
+    models = ["google/gemini-2.0-flash-exp:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]
     retries = 2
     for model in models:
         for attempt in range(retries):

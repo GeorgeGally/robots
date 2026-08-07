@@ -730,13 +730,19 @@ if [ "${1:-}" = "-generate" ]; then
       fi
     done
     echo "  generating…"
-    output=$(python3 "$generate_py" 2>>"$HOME/.robots-generate.log")
-    if [ $? -eq 0 ]; then
+    errfile=$(mktemp)
+    output=$(python3 "$generate_py" 2>"$errfile") || true
+    exit_code=$?
+    cat "$errfile" >> "$HOME/.robots-generate.log"
+    if [ $exit_code -eq 0 ] && [ -n "$output" ]; then
       echo "$output"
     else
-      echo "  ✗  generation failed. check $HOME/.robots-generate.log" >&2
+      last_err=$(tail -2 "$errfile")
+      echo "  ✗  generation failed: $last_err" >&2
+      rm -f "$errfile"
       exit 1
     fi
+    rm -f "$errfile"
     exit 0
   fi
   # fallback to simple generator
