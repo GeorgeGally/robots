@@ -123,13 +123,17 @@ def parse_llm_response(content):
     for line in content.strip().split("\n"):
         stripped = line.strip()
         if stripped.upper().startswith("POST:"):
-            post = stripped.split(":", 1)[1].strip()
+            val = stripped.split(":", 1)[1].strip()
+            if val.lower() not in ("your sentence with spaces", "<your funny sentence here>", "sentence", "<sentence>"):
+                post = val
         elif stripped.upper().startswith("HAIKU:"):
-            haiku.append(stripped.split(":", 1)[1].strip())
+            val = stripped.split(":", 1)[1].strip()
+            if not re.match(r'^<line\b|^line \d$|^your haiku', val, re.I):
+                haiku.append(val)
     if not post:
         for line in content.strip().split("\n"):
             stripped = line.strip()
-            if stripped and not re.match(r'(?i)^(?:let me|i need|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome|here|okay|now|first|note:)', stripped):
+            if stripped and not re.match(r'(?i)^(?:let me|i need|i should|the task|from the last|current|i have|actually|or more|let\'s|welcome|here|okay|now|first|note:|sentence|post|haiku)', stripped):
                 post = stripped
                 break
     return post, haiku[:3]
