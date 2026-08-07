@@ -527,6 +527,16 @@ ENVEOF
   local python_path; python_path=$(command -v python3 2>/dev/null || echo "python3")
   local cron_line="0 3 * * * PATH=/usr/local/bin:/usr/bin:/bin ${robots_path} -generate >> \$HOME/.robots-generate.log 2>&1"
   local existing_cron; existing_cron=$(crontab -l 2>/dev/null | grep -F "robots -generate" || true)
+
+  old_cron=$(crontab -l 2>/dev/null | grep "robots generate" | grep -v "robots -generate" || true)
+  if [ -n "$old_cron" ]; then
+    echo "  ⚠  found old broken cron entry (missing dash, causes /generate/ posts):"
+    echo "  $old_cron"
+    crontab -l 2>/dev/null | grep -v "robots generate" | crontab - 2>/dev/null || true
+    echo "  removed. install corrected version?"
+    existing_cron=""
+  fi
+
   cron_status=""
   if [ -n "$existing_cron" ]; then
     echo "  cron: already installed"
@@ -645,6 +655,16 @@ if [ "${1:-}" = "-cron" ]; then
   robots_path=$(command -v robots 2>/dev/null || echo "$0")
   cron_line="0 3 * * * PATH=/usr/local/bin:/usr/bin:/bin ${robots_path} -generate >> \$HOME/.robots-generate.log 2>&1"
   existing_cron=$(crontab -l 2>/dev/null | grep -F "robots -generate" || true)
+
+  old_cron=$(crontab -l 2>/dev/null | grep "robots generate" | grep -v "robots -generate" || true)
+  if [ -n "$old_cron" ]; then
+    echo "  ⚠  found old broken cron entry (missing dash, causes /generate/ posts):"
+    echo "  $old_cron"
+    crontab -l 2>/dev/null | grep -v "robots generate" | crontab - 2>/dev/null || true
+    echo "  removed. install corrected version?"
+    existing_cron=""
+  fi
+
   if [ -n "$existing_cron" ]; then
     echo "  cron: already installed"
     echo "  $existing_cron"
